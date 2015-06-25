@@ -50,7 +50,9 @@ But really that's your business...
 
 * The `mzg-placetype-to-csv` tool does not produce (and the `mzg-csv-to-feature-collection` tool does not expect) CSV files with headers.
 
-* The `mzg-csv-to-feature-collection` tools needs to be taught how to produce multiple GeoJSON files containing a maximum number of features.
+* The `mzg-csv-to-feature-collection` tool needs to be taught how to produce multiple GeoJSON files containing a maximum number of features.
+
+* The `mzg-csv-to-feature-collection` tool needs to be taught how to fetch things from S3 (read: not your local filesystem).
 
 ## See also
 
