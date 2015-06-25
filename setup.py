@@ -11,7 +11,7 @@ setup(
     version='0.1',
     description='Simple Python wrapper for managing Mapzen Gazetteer related functions',
     author='Mapzen',
-    url='https://github.com/thisisaaronland/py-mapzen-gazetter',
+    url='https://github.com/mapzen/py-mapzen-gazetter',
     install_requires=[
         'geojson',
         ],
@@ -20,6 +20,7 @@ setup(
     packages=packages,
     scripts=[
         'scripts/mzg-placetype-to-csv',
+        'mzg-csv-to-feature-collection'
         ],
     download_url='https://github.com/thisisaaronland/py-mapzen-gazetteer/releases/tag/v0.1',
     license='BSD')

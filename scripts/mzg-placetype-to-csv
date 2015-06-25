@@ -14,6 +14,7 @@ if __name__ == '__main__':
 
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
     opt_parser.add_option('-p', '--place-type', dest='place', action='store', default=None, help='')
+    opt_parser.add_option('-a', '--abspath', dest='abspath', action='store_true', default=False, help='Write absolute paths')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Where to write concordances (default is STDOUT)')
 
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
@@ -42,6 +43,7 @@ if __name__ == '__main__':
     for (path, dirs, files) in os.walk(source):
 
         for f in files:
+
             f = os.path.join(path, f)
             f = os.path.abspath(f)
             
@@ -74,5 +76,21 @@ if __name__ == '__main__':
             if not name:
                 name = ""
 
-            out = (mzid, name, f)
+            name = name.encode('utf8')
+
+            source = props.get("mz:source", None)
+            
+            if not source:
+                source = props.get("mz:datasource", None)
+
+            if not source:
+                logging.warning("%s is missing a mz:source property" % f)
+                source = ""
+
+            if not options.abspath:
+                
+                f = f.replace(options.source, "")
+                f = f.lstrip("/")
+
+            out = (mzid, name, source, f)
             writer.writerow(out)
