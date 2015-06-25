@@ -2,7 +2,7 @@
 
 ```
 Brett
-what about the gazatteer? needs a name
+what about the gazetteer? needs a name
 
 Aaron
 can we call it "knutzen" or would that be weird?
