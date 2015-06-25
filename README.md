@@ -1,5 +1,16 @@
 # py-mapzen-gazetteer
 
+```
+Brett
+what about the gazatteer? needs a name
+
+Aaron
+can we call it "knutzen" or would that be weird?
+
+Brett
+it does have zen in it
+```
+
 ## Usage
 
 Please write me
