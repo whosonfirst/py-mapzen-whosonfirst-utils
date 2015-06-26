@@ -37,14 +37,14 @@ if __name__ == '__main__':
     path = os.path.abspath(options.csv)
     fh = open(path, 'r')
 
-    reader = csv.reader(fh)
+    reader = csv.DictReader(fh)
     first = True
 
     # TO DO: max records...
 
     for row in reader:
 
-        id, name, source, path = row
+        path = row['path']
 
         if not options.abspath:
             path = os.path.join(options.source, path)

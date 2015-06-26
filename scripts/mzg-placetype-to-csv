@@ -38,7 +38,9 @@ if __name__ == '__main__':
         path = os.path.abspath(options.csv)
         fh = open(path, 'w')
 
-    writer = csv.writer(fh)
+    fn = ('id','name','source','path')
+    writer = csv.DictWriter(fh, fieldnames=fn)
+    writer.writeheader()
 
     for (path, dirs, files) in os.walk(source):
 
@@ -92,5 +94,11 @@ if __name__ == '__main__':
                 f = f.replace(options.source, "")
                 f = f.lstrip("/")
 
-            out = (mzid, name, source, f)
+            out = {
+                'id': mzid,
+                'name': name,
+                'source': source,
+                'apth': f
+                }
+
             writer.writerow(out)

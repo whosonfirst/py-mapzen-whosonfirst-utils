@@ -28,6 +28,7 @@ $> /usr/local/bin/mzg-placetype-to-csv --source /usr/local/mapzen/gazetteer --pl
 Which would produce something like this:
 
 ```
+id,name,source,path
 85632161,Macao S.A.R,quattroshapes,856/321/61/85632161.geojson
 85632163,Guam,quattroshapes,856/321/63/85632163.geojson
 85632167,Bahrain,quattroshapes,856/321/67/85632167.geojson
@@ -58,8 +59,6 @@ $> PORT=5000 java -Xmx384m -cp 'target/classes:target/dependency/*' com.hackdiar
 But really that's your business...
 
 ## Known knowns
-
-* The `mzg-placetype-to-csv` tool does not produce (and the `mzg-csv-to-feature-collection` tool does not expect) CSV files with headers.
 
 * The `mzg-csv-to-feature-collection` tool needs to be taught how to produce multiple GeoJSON files containing a maximum number of features.
 

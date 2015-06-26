@@ -53,12 +53,11 @@ if __name__ == '__main__':
     path = os.path.abspath(options.csv)
     fh = open(path, 'r')
 
-    reader = csv.reader(fh)
+    reader = csv.DictReader(fh)
 
     for row in reader:
 
-        id, name, source, path = row
-
+        path = row['path']
         abspath = path
 
         if not options.abspath:
