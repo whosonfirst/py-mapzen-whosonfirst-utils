@@ -7,18 +7,24 @@ import csv
 import pprint
 import geojson
 
+import requests
+import StringIO
+import boto.s3.connection
+import boto.s3.key
+
 if __name__ == '__main__':
 
     import optparse
     opt_parser = optparse.OptionParser()
 
-    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
-    opt_parser.add_option('-a', '--abspath', dest='abspath', action='store_true', default=False, help='CSV file uses absolute paths (default is false)')
-    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default='fs', help='Where to read files from (default is "fs")')
+    opt_parser.add_option('-p', '--prefix', dest='prefix', action='store', default=None, help='Prefix for paths in CSV file (optional)')
 
+    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
     opt_parser.add_option('-o', '--out', dest='out', action='store', default=None, help='Where to write feature collection (default is STDOUT)')
 
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+
     options, args = opt_parser.parse_args()
 
     if options.verbose:	
@@ -46,21 +52,45 @@ if __name__ == '__main__':
 
         path = row['path']
 
-        if not options.abspath:
-            path = os.path.join(options.source, path)
+        if options.prefix:
+            path = os.path.join(options.prefix, path)
 
-        if not os.path.exists(path):
-            logging.error("%s does not exist, skipping" % path)
-            continue
+        logging.debug("fetching %s, with %s" % (path, options.source))
 
-        fh2 = open(path, 'r')
+        fdata = None
+
+        if options.source == 's3':
+            
+            try:
+                rsp = requests.get(path)
+            except Exception, e:
+                logging.error("failed to retrieve %s, because %s" % (path, e))
+                continue
+
+            code = rsp.status_code
+
+            if code != 200:
+                logging.error("%s returned an unexpected status code: %s" (path, code))
+                continue
+
+            fdata = StringIO.StringIO()
+            fdata.write(rsp.content)
+            fdata.seek(0)
+
+        else:
+
+            if not os.path.exists(path):
+                logging.error("%s does not exist, skipping" % path)
+                continue
+
+            fdata = open(path, 'r')
 
         if first == True:
             first = False
         else:
             out.write(",")
 
-        out.write(fh2.read())
+        out.write(fdata.read())
 
     out.write("""]}""")
     out.close()

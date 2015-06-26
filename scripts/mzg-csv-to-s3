@@ -6,6 +6,7 @@ import os.path
 import csv
 import pprint
 import geojson
+import time
 
 import boto.s3.connection
 import boto.s3.key
@@ -21,9 +22,9 @@ if __name__ == '__main__':
     opt_parser.add_option('-a', '--abspath', dest='abspath', action='store_true', default=False, help='CSV file uses absolute paths (default is false)')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
 
-    opt_parser.add_option('-b', '--bucket', dest='bucket', action='store', default=None, help='The S3 bucket for where to put files')
     opt_parser.add_option('-m', '--meta', dest='meta', action='store_true', default=False, help='Store the CSV file in the meta directory (default is false)')
 
+    opt_parser.add_option('-b', '--bucket', dest='bucket', action='store', default=None, help='The S3 bucket for where to put files')
     opt_parser.add_option('--config', dest='config', action='store', default=None, help='Config file containing S3 credential')
 
     opt_parser.add_option('--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
@@ -108,8 +109,19 @@ if __name__ == '__main__':
         if options.dryrun:
             logging.info("dry-run mode enabled, just kidding")
         else:
-            k = boto.s3.key.Key(bucket)
-            k.key = path
-            
-            k.set_contents_from_filename(options.csv)
-            k.set_acl('public-read')
+
+            try:
+                k = boto.s3.key.Key(bucket)
+                k.key = path            
+                k.set_contents_from_filename(options.csv)
+                
+                try:
+                    k.set_acl('public-read')
+                except Exception, e:
+                    logging.warning("Failed to set ACL because %s" % e)
+                    time.sleep(1)
+                    
+                    k.set_acl('public-read')
+
+            except Exception, e:
+                logging.error("some part of storing %s failed, because %s" % (path, e))
