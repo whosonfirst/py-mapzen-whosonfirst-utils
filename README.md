@@ -10,10 +10,17 @@ can we call it "knutzen" or would that be weird?
 Brett
 it does have zen in it
 ```
+## Install
+
+Depending on which version of rage-making Python or more likely the rage-making-er `setuptools` you may need to expicitly tell the install script to put the command line tools in `/usr/local/bin` like this:
+
+```
+sudo python ./setup.py install --install-scripts /usr/local/bin
+```
 
 ## Usage
 
-Please write me
+_Please write me_
 
 ## Command line tools
 
