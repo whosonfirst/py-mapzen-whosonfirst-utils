@@ -72,7 +72,7 @@ if __name__ == '__main__':
             continue
 
         if bucket.get_key(path):
-            logging.info("%s already exits, skipping")
+            logging.info("a key named %s already exits, skipping" % path)
             continue
 
         f = open(abspath, 'r')

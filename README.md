@@ -70,6 +70,8 @@ Note the `--meta` flag. This will also copy the CSV file in question to a `meta`
 
 ## Known knowns
 
+* The `mzg-csv-to-s3` tool does not overwrite files or offer any logic for comparing two files.
+
 * The `mzg-csv-to-feature-collection` tool needs to be taught how to produce multiple GeoJSON files containing a maximum number of features.
 
 * The `mzg-csv-to-feature-collection` tool needs to be taught how to fetch things from S3 (read: not your local filesystem).
