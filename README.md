@@ -41,7 +41,13 @@ id,name,source,path
 Combine all the records in a CSV file (produced by `mzg-placetype-to-csv`) in to a single GeoJSON feature collection:
 
 ```
-/usr/local/bin/mzg-csv-to-feature-collection --source /usr/local/mapzen/gazetteer --csv /usr/local/mapzen/mzg-country.csv --out mzg-country.geojson
+/usr/local/bin/mzg-csv-to-feature-collection --source fs --prefix /usr/local/mapzen/gazetteer --csv /usr/local/mapzen/mzg-country.csv --out mzg-country.geojson
+```
+
+You can also fetch things stored on a (public) S3 bucket:
+
+```
+/usr/local/bin/mzg-csv-to-feature-collection --source s3 --prefix http://com.mapzen.gazetteer.s3.amazonaws.com --csv /usr/local/mapzen/mzg-country.csv --out mzg-country.geojson
 ```
 
 Which you could then hand off to something like `ogr2ogr`:
@@ -73,8 +79,6 @@ Note the `--meta` flag. This will also copy the CSV file in question to a `meta`
 * The `mzg-csv-to-s3` tool does not overwrite files or offer any logic for comparing two files.
 
 * The `mzg-csv-to-feature-collection` tool needs to be taught how to produce multiple GeoJSON files containing a maximum number of features.
-
-* The `mzg-csv-to-feature-collection` tool needs to be taught how to fetch things from S3 (read: not your local filesystem).
 
 ## See also
 
