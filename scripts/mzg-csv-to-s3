@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+
+import sys
+import logging
+import os.path
+import csv
+import pprint
+import geojson
+
+import boto.s3.connection
+import boto.s3.key
+
+if __name__ == '__main__':
+
+    import optparse
+    import ConfigParser
+
+    opt_parser = optparse.OptionParser()
+
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
+    opt_parser.add_option('-a', '--abspath', dest='abspath', action='store_true', default=False, help='CSV file uses absolute paths (default is false)')
+    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
+
+    opt_parser.add_option('-b', '--bucket', dest='bucket', action='store', default=None, help='The S3 bucket for where to put files')
+    opt_parser.add_option('--config', dest='config', action='store', default=None, help='Config file containing S3 credential')
+
+    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+    options, args = opt_parser.parse_args()
+
+    if options.verbose:	
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    cfg = ConfigParser.ConfigParser()
+    cfg.read(options.config)
+
+    key = cfg.get('aws', 'access_key')
+    secret = cfg.get('aws', 'access_secret')
+
+    # https://stackoverflow.com/questions/27652318/cant-connect-to-s3-buckets-with-periods-in-their-name-when-using-boto-on-herok
+    # grrrrrnnnnnn.... (20150626/thisisaaronland)
+
+    fmt = boto.s3.connection.OrdinaryCallingFormat()
+
+    conn = boto.s3.connection.S3Connection(key, secret, calling_format=fmt)
+    bucket = conn.get_bucket(options.bucket)
+
+    if not bucket:
+        logging.error("Unknown bucket")
+        sys.exit()
+
+    path = os.path.abspath(options.csv)
+    fh = open(path, 'r')
+
+    reader = csv.reader(fh)
+
+    for row in reader:
+
+        id, name, source, path = row
+
+        abspath = path
+
+        if not options.abspath:
+            abspath = os.path.join(options.source, path)
+
+        if not os.path.exists(abspath):
+            logging.error("%s does not exist, skipping" % abspath)
+            continue
+
+        if bucket.get_key(path):
+            logging.info("%s already exits, skipping")
+            continue
+
+        f = open(abspath, 'r')
+        data = geojson.load(f)
+
+        props = data['properties']
+        lastmod = props.get('mz:lastmodified', None)
+
+        logging.info("create %s" % path)
+
+        k = boto.s3.key.Key(bucket)
+        k.key = path
+
+        if lastmod:
+            k.set_metadata('lastmodified', lastmod)
+
+        k.set_contents_from_filename(abspath)
+        k.set_acl('public-read')
