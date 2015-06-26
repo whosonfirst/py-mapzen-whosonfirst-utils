@@ -22,9 +22,13 @@ if __name__ == '__main__':
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
 
     opt_parser.add_option('-b', '--bucket', dest='bucket', action='store', default=None, help='The S3 bucket for where to put files')
+    opt_parser.add_option('-m', '--meta', dest='meta', action='store_true', default=False, help='Store the CSV file in the meta directory (default is false)')
+
     opt_parser.add_option('--config', dest='config', action='store', default=None, help='Config file containing S3 credential')
 
-    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+    opt_parser.add_option('--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+    opt_parser.add_option('--dry-run', dest='dryrun', action='store_true', default=False, help='Run in "dry-run" mode')
+
     options, args = opt_parser.parse_args()
 
     if options.verbose:	
@@ -77,7 +81,11 @@ if __name__ == '__main__':
         props = data['properties']
         lastmod = props.get('mz:lastmodified', None)
 
-        logging.info("create %s" % path)
+        logging.info("Creating %s (from %s)" % (path, abspath))
+        
+        if options.dryrun:
+            logging.info("dry-run mode enabled, just kidding")
+            continue
 
         k = boto.s3.key.Key(bucket)
         k.key = path
@@ -87,3 +95,21 @@ if __name__ == '__main__':
 
         k.set_contents_from_filename(abspath)
         k.set_acl('public-read')
+
+    logging.info("All done, storing the contents of the CSV file")
+
+    if options.meta:
+
+        fname = os.path.basename(options.csv)
+        path = "meta/%s" % fname
+
+        logging.info("Storing the CSV file in %s" % path)
+
+        if options.dryrun:
+            logging.info("dry-run mode enabled, just kidding")
+        else:
+            k = boto.s3.key.Key(bucket)
+            k.key = path
+            
+            k.set_contents_from_filename(options.csv)
+            k.set_acl('public-read')

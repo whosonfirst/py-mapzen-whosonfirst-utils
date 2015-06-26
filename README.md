@@ -58,6 +58,16 @@ $> PORT=5000 java -Xmx384m -cp 'target/classes:target/dependency/*' com.hackdiar
 
 But really that's your business...
 
+### mzg-cvs-to-s3
+
+Copy the files listed in an CSV file – produced by `mzg-placetype-to-csv` or similar – to an S3 bucket:
+
+```
+/usr/local/bin/mzg-csv-to-s3 --source /usr/local/mapzen/gazetteer --csv /usr/local/mapzen/mzg-region-20150625.csv --bucket com.mapzen.gazetteer --config aws.cfg --meta
+```
+
+Note the `--meta` flag. This will also copy the CSV file in question to a `meta` folder in the S3 bucket.
+
 ## Known knowns
 
 * The `mzg-csv-to-feature-collection` tool needs to be taught how to produce multiple GeoJSON files containing a maximum number of features.
