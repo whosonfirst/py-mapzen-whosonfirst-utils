@@ -11,6 +11,24 @@ import time
 import boto.s3.connection
 import boto.s3.key
 
+def put_file(bucket, file, name):
+
+    try:
+        k = boto.s3.key.Key(bucket)
+        k.key = name   
+        k.set_contents_from_filename(file)
+        
+        try:
+            k.set_acl('public-read')
+        except Exception, e:
+            logging.warning("Failed to set ACL because %s" % e)
+            time.sleep(1)
+                    
+            k.set_acl('public-read')
+
+    except Exception, e:
+        logging.error("some part of storing %s failed, because %s" % (name, e))
+
 if __name__ == '__main__':
 
     import optparse
@@ -88,14 +106,7 @@ if __name__ == '__main__':
             logging.info("dry-run mode enabled, just kidding")
             continue
 
-        k = boto.s3.key.Key(bucket)
-        k.key = path
-
-        if lastmod:
-            k.set_metadata('lastmodified', lastmod)
-
-        k.set_contents_from_filename(abspath)
-        k.set_acl('public-read')
+        put_file(bucket, abspath, path)
 
     logging.info("All done, storing the contents of the CSV file")
 
@@ -109,19 +120,4 @@ if __name__ == '__main__':
         if options.dryrun:
             logging.info("dry-run mode enabled, just kidding")
         else:
-
-            try:
-                k = boto.s3.key.Key(bucket)
-                k.key = path            
-                k.set_contents_from_filename(options.csv)
-                
-                try:
-                    k.set_acl('public-read')
-                except Exception, e:
-                    logging.warning("Failed to set ACL because %s" % e)
-                    time.sleep(1)
-                    
-                    k.set_acl('public-read')
-
-            except Exception, e:
-                logging.error("some part of storing %s failed, because %s" % (path, e))
+            put_file(bucket, options.csv, path)
