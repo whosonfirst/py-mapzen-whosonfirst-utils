@@ -13,6 +13,7 @@ setup(
     author='Mapzen',
     url='https://github.com/mapzen/py-mapzen-gazetter',
     install_requires=[
+        'requests',
         'geojson',
         'boto',
         ],
