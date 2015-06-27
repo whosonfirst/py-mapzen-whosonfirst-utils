@@ -98,7 +98,7 @@ if __name__ == '__main__':
                 'id': mzid,
                 'name': name,
                 'source': source,
-                'apth': f
+                'path': f
                 }
 
             writer.writerow(out)
