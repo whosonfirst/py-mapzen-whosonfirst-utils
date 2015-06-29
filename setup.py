@@ -22,7 +22,7 @@ setup(
     packages=packages,
     scripts=[
         'scripts/mzg-placetype-to-csv',
-        'scripts/mzg-csv-to-feature-collection'
+        'scripts/mzg-csv-to-feature-collection',
         'scripts/mzg-csv-to-s3',
         ],
     download_url='https://github.com/thisisaaronland/py-mapzen-gazetteer/releases/tag/v0.1',
