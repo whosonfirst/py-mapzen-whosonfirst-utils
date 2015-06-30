@@ -19,6 +19,7 @@ if __name__ == '__main__':
 
     opt_parser.add_option('-s', '--source', dest='source', action='store', default='fs', help='Where to read files from (default is "fs")')
     opt_parser.add_option('-p', '--prefix', dest='prefix', action='store', default=None, help='Prefix for paths in CSV file (optional)')
+    opt_parser.add_option('-m', '--max', dest='max', action='store', default=None, help='The maximum number of records in asingle GeoJSON file')
 
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
     opt_parser.add_option('-o', '--out', dest='out', action='store', default=None, help='Where to write feature collection (default is STDOUT)')
@@ -32,21 +33,24 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
-    if options.out:
-        out = os.path.abspath(options.out)
-        out = open(out, 'w')
-    else:
-        out = sys.stdout
 
-    out.write("""{"type": "FeatureCollection", "features": [""")
+    first = True
+    counter = 1
+    page = 1
+    max_records = 0
+
+    if options.max:
+        max_records = int(options.max)
+        max_records = max(0, max_records)
+
+    logging.debug("max records per geojson file: %s" % max_records)
+
+    out = None
 
     path = os.path.abspath(options.csv)
     fh = open(path, 'r')
 
     reader = csv.DictReader(fh)
-    first = True
-
-    # TO DO: max records...
 
     for row in reader:
 
@@ -85,6 +89,31 @@ if __name__ == '__main__':
 
             fdata = open(path, 'r')
 
+        if not out:
+
+            if options.out:
+
+                outpath = options.out
+                outpath = os.path.abspath(outpath)
+                
+                if max_records:
+
+                    root = os.path.dirname(outpath)
+                    fname = os.path.basename(outpath)
+                    fname, ext = os.path.splitext(fname)
+                    ext = ext.lstrip(".")
+
+                    fname = "%s-%s.%s" % (fname, page, ext)
+                    outpath = os.path.join(root, fname)
+
+                logging.debug("write geojson to %s" % outpath)
+
+                out = open(outpath, 'w')
+            else:
+                out = sys.stdout
+
+            out.write("""{"type": "FeatureCollection", "features": [""")
+
         if first == True:
             first = False
         else:
@@ -92,5 +121,20 @@ if __name__ == '__main__':
 
         out.write(fdata.read())
 
-    out.write("""]}""")
-    out.close()
+        counter += 1
+
+        if counter == max_records:
+
+            logging.debug("reached max limit for records")
+
+            out.write("""]}""")
+            out.close()
+            out = None
+
+            counter = 0
+            first = True
+            page += 1
+
+    if out:
+        out.write("""]}""")
+        out.close()
