@@ -50,6 +50,20 @@ if __name__ == '__main__':
     path = os.path.abspath(options.csv)
     fh = open(path, 'r')
 
+    if max_records:
+        lines = 0
+
+        for ln in fh.readlines():
+            lines += 1
+            
+            if lines == (max_records + 1):
+                break
+
+        if lines <= max_records:
+            max_records = 0
+
+        fh.seek(0)
+
     reader = csv.DictReader(fh)
 
     for row in reader:

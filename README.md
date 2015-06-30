@@ -48,19 +48,19 @@ id,name,source,path
 Combine all the records in a CSV file (produced by `mzg-placetype-to-csv`) in to a single GeoJSON feature collection:
 
 ```
-/usr/local/bin/mzg-csv-to-feature-collection --source fs --prefix /usr/local/mapzen/gazetteer --csv /usr/local/mapzen/mzg-country.csv --out mzg-country.geojson
+$> /usr/local/bin/mzg-csv-to-feature-collection --source fs --prefix /usr/local/mapzen/gazetteer --csv /usr/local/mapzen/mzg-country.csv --out mzg-country.geojson
 ```
 
 You can also fetch things stored on a (public) S3 bucket:
 
 ```
-/usr/local/bin/mzg-csv-to-feature-collection --source s3 --prefix http://com.mapzen.gazetteer.s3.amazonaws.com --csv /usr/local/mapzen/mzg-country.csv --out mzg-country.geojson
+$> /usr/local/bin/mzg-csv-to-feature-collection --source s3 --prefix http://com.mapzen.gazetteer.s3.amazonaws.com --csv /usr/local/mapzen/mzg-country.csv --out mzg-country.geojson
 ```
 
 Which you could then hand off to something like `ogr2ogr`:
 
 ```
-or2ogr -F 'ESRI Shapefile' mzg-country.shp mzg-country.geojson
+$> ogr2ogr -F 'ESRI Shapefile' mzg-country.shp mzg-country.geojson
 ```
 
 Which you could then load in to something like the [flickrgeocoder-java](https://github.com/thisisaaronland/flickrgeocoder-java) reverse-geocoder:
@@ -70,6 +70,22 @@ $> PORT=5000 java -Xmx384m -cp 'target/classes:target/dependency/*' com.hackdiar
 ```
 
 But really that's your business...
+
+You can limit the number of records in a GeoJSON file by passing the `--max` flag. For example:
+
+```
+$> /usr/local/mapzen/py-mapzen-gazetteer/scripts/mzg-csv-to-feature-collection --source fs --prefix /usr/local/mapzen/gazetteer-local --csv /usr/local/mapzen/gazetteer-local/meta/mzg-locality-latest.csv --max 50000 --out /usr/local/mapzen/gazetteer-bundles/locality/locality.geojson --verbose
+```
+
+Which would produce something like this:
+
+```
+ll ../gazetteer-bundles/locality/*.geojson
+-rw-r--r-- 1 ubuntu ubuntu 457624245 Jun 30 18:41 ../gazetteer-bundles/locality/locality-1.geojson
+-rw-r--r-- 1 ubuntu ubuntu 183653688 Jun 30 18:41 ../gazetteer-bundles/locality/locality-2.geojson
+-rw-r--r-- 1 ubuntu ubuntu 232375434 Jun 30 18:41 ../gazetteer-bundles/locality/locality-3.geojson
+-rw-r--r-- 1 ubuntu ubuntu  44981632 Jun 30 18:41 ../gazetteer-bundles/locality/locality-4.geojson
+```
 
 ### mzg-cvs-to-s3
 
@@ -123,8 +139,6 @@ exit 0;
 ## Known knowns
 
 * The `mzg-csv-to-s3` tool does not overwrite files or offer any logic for comparing two files.
-
-* The `mzg-csv-to-feature-collection` tool needs to be taught how to produce multiple GeoJSON files containing a maximum number of features.
 
 ## See also
 
