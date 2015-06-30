@@ -97,6 +97,8 @@ Copy the files listed in an CSV file – produced by `mzg-placetype-to-csv` or s
 
 Note the `--meta` flag. This will also copy the CSV file in question to a `meta` folder in the S3 bucket.
 
+By default this tool does not replace existing files. You can toggle this setting by passing the `--overwrite` flags.
+
 ## For example
 
 ### bundle-placetype.sh
@@ -157,7 +159,7 @@ exit 0;
 
 ## Known knowns
 
-* The `mzg-csv-to-s3` tool does not overwrite files or offer any logic for comparing two files.
+* The `mzg-csv-to-s3` tool does not attempt to compare timestamps on local and remote files so if you need to overwrite files you'll have to pass the `--overwrite` flag.
 
 * The `mzg-csv-to-s3` tool does not know how to do things in parallel (or use more than one processor).
 
