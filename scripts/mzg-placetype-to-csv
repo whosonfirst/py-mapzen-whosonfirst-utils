@@ -38,7 +38,21 @@ if __name__ == '__main__':
         path = os.path.abspath(options.csv)
         fh = open(path, 'w')
 
-    fn = ('id','name','source','path')
+    defaults = {
+        'id': 0,
+        'parent_id': 0,
+        'name': '',
+        'source': '',
+        'path' : '',
+        'lastmodified': 0,
+        'iso': '',
+        'bbox': '',
+        'geomhash': '',
+        }
+
+    fn = defaults.keys()
+    fn.sort()
+
     writer = csv.DictWriter(fh, fieldnames=fn)
     writer.writeheader()
 
@@ -73,12 +87,18 @@ if __name__ == '__main__':
                 logging.debug("%s is a %s, so skipping" % (f, placetype))
                 continue
 
+            out = defaults
+
             mzid = props.get('mz:id', 0)
 
             if mzid == 0:
                 logging.warning("%s is missing an mz:id property, using filename" % f)
                 fname = os.path.basename(f)
                 mzid = fname.replace(".geojson", "")
+
+            out['id'] = mzid
+
+            out['parent_id'] = props.get('mz:parent_id', 0)
 
             name = props.get('mz:name', None)
 
@@ -89,6 +109,7 @@ if __name__ == '__main__':
                 name = ""
 
             name = name.encode('utf8')
+            out['name'] = name
 
             source = props.get("mz:source", None)
             
@@ -99,16 +120,23 @@ if __name__ == '__main__':
                 logging.warning("%s is missing a mz:source property" % f)
                 source = ""
 
+            out['source'] = source
+
             if not options.abspath:
-                
                 f = f.replace(options.source, "")
                 f = f.lstrip("/")
+            
+            out['path'] = f
 
-            out = {
-                'id': mzid,
-                'name': name,
-                'source': source,
-                'path': f
-                }
+            bbox = data.get('bbox', None)
+
+            if bbox:
+                bbox = map(str, bbox)
+                bbox = ",".join(bbox)
+                out['bbox'] = bbox
+
+            out['iso'] = props.get('iso:country', '')
+            out['lastmodified'] = props.get('mz:lastmodified', 0)
+            out['geomhash'] = props.get('mz:geomhash', '')
 
             writer.writerow(out)
