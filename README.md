@@ -159,6 +159,8 @@ exit 0;
 
 * The `mzg-csv-to-s3` tool does not overwrite files or offer any logic for comparing two files.
 
+* The `mzg-csv-to-s3` tool does not know how to do things in parallel (or use more than one processor).
+
 ## See also
 
 * [py-mapzen-gazetteer-export](https://github.com/mapzen/py-mapzen-gazetteer-export)
