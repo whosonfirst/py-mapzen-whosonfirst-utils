@@ -8,12 +8,13 @@ desc = open("README.md").read(),
 setup(
     name='mapzen.gazetteer.export',
     namespace_packages=['mapzen', 'mapzen.gazetteer'],
-    version='0.13',
+    version='0.14',
     description='Simple Python wrapper for managing Mapzen Gazetteer related functions',
     author='Mapzen',
     url='https://github.com/mapzen/py-mapzen-gazetter',
     install_requires=[
         'requests',
+        'shapely',
         'geojson',
         'boto',
         ],
@@ -25,5 +26,5 @@ setup(
         'scripts/mzg-csv-to-feature-collection',
         'scripts/mzg-csv-to-s3',
         ],
-    download_url='https://github.com/thisisaaronland/py-mapzen-gazetteer/releases/tag/v0.13',
+    download_url='https://github.com/thisisaaronland/py-mapzen-gazetteer/releases/tag/v0.14',
     license='BSD')

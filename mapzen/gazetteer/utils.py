@@ -1,3 +1,4 @@
+import shapely.geometry
 import requests
 import json
 
@@ -41,3 +42,10 @@ def generate_id(self):
         return 0
     
     return data.get('integer', 0)
+
+def ensure_bbox(f):
+
+    if not f.get('bbox', False):
+        geom = f['geometry']
+        shp = shapely.geometry.asShape(geom)
+        f['bbox'] = list(shp.bounds)
