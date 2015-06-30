@@ -102,6 +102,8 @@ Note the `--meta` flag. This will also copy the CSV file in question to a `meta`
 ### bundle-placetype.sh
 
 ```
+#!/bin/sh
+
 TYPE=$1
 YMD=`date "+%Y%m%d"`
 
@@ -123,17 +125,34 @@ then
 fi
 
 echo "generate CSV bundle for ${TYPE} - ${CSV_CURRENT}"
-/usr/local/bin/mzg-placetype-to-csv --source ${SOURCE} --place-type ${TYPE} --csv ${CSV_CURRENT}
-cp ${CSV_CURRENT} ${CSV_LATEST}
+# /usr/local/bin/mzg-placetype-to-csv --source ${SOURCE} --place-type ${TYPE} --csv ${CSV_CURRENT}
+# cp ${CSV_CURRENT} ${CSV_LATEST}
+
+echo "remove old GeoJSON files for ${TYPE}"
+
+for GEOJSON in `ls -a ${ROOT}/*.geojson`
+do
+    echo "remove ${GEOJSON}"
+    rm ${GEOJSON}
+done
 
 echo "generate feature collection for ${TYPE} - ${GEOJSON}"
-/usr/local/bin/mzg-csv-to-feature-collection --source fs --prefix ${SOURCE} --csv ${CSV_CURRENT} --out ${GEOJSON}
+/usr/local/bin/mzg-csv-to-feature-collection --source fs --prefix ${SOURCE} --csv ${CSV_CURRENT} --out ${GEOJSON} --max
 
-echo "generate shapefile for ${TYPE} - ${SHAPEFILE}"
-ogr2ogr -overwrite -F 'ESRI Shapefile' ${SHAPEFILE} ${GEOJSON}
+echo "generate shapefiles for ${TYPE}"
+
+for GEOJSON in `ls -a ${ROOT}/*.geojson`
+do
+    SHAPEFILE=`echo ${GEOJSON} | awk -F '.geojson' '{ print $1 }'`
+    SHAPEFILE="${SHAPEFILE}.shp"
+
+    echo "generate shapefile for ${TYPE} - ${SHAPEFILE}"
+    ogr2ogr -overwrite -F 'ESRI Shapefile' ${SHAPEFILE} ${GEOJSON}
+done
 
 echo "all done"
 exit 0;
+
 ```
 
 ## Known knowns
