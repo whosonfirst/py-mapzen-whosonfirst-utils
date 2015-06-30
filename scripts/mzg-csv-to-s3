@@ -41,6 +41,7 @@ if __name__ == '__main__':
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
 
     opt_parser.add_option('-m', '--meta', dest='meta', action='store_true', default=False, help='Store the CSV file in the meta directory (default is false)')
+    opt_parser.add_option('-o', '--overwrite', dest='overwrite', action='store_true', default=False, help='Overwrite existing files (default is false)')
 
     opt_parser.add_option('-b', '--bucket', dest='bucket', action='store', default=None, help='The S3 bucket for where to put files')
     opt_parser.add_option('--config', dest='config', action='store', default=None, help='Config file containing S3 credential')
@@ -94,7 +95,9 @@ if __name__ == '__main__':
             logging.error("[%s] %s does not exist, skipping" % (counter, abspath))
             continue
 
-        if bucket.get_key(path):
+        # TO DO: check timestamps...
+
+        if bucket.get_key(path) and not options.overwrite:
             logging.info("[%s] a key named %s already exits, skipping" % (counter, path))
             continue
 
