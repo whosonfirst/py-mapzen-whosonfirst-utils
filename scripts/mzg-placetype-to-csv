@@ -48,10 +48,20 @@ if __name__ == '__main__':
 
             f = os.path.join(path, f)
             f = os.path.abspath(f)
-            
-            fh = open(f, 'r')
-            data = geojson.load(fh)
-            
+
+            if not f.endswith(".geojson"):
+                logging.debug("%s is not a geojson file, skipping")
+                continue
+
+            logging.debug("processing %s" % f)
+
+            try:
+                fh = open(f, 'r')
+                data = geojson.load(fh)
+            except Exception, e:
+                logging.error("failed to process %s, because %s" % (f, e))
+                raise Exception, e
+
             props = data['properties']
             placetype = props.get('mz:placetype', None)
 
