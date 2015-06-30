@@ -125,8 +125,8 @@ then
 fi
 
 echo "generate CSV bundle for ${TYPE} - ${CSV_CURRENT}"
-# /usr/local/bin/mzg-placetype-to-csv --source ${SOURCE} --place-type ${TYPE} --csv ${CSV_CURRENT}
-# cp ${CSV_CURRENT} ${CSV_LATEST}
+/usr/local/bin/mzg-placetype-to-csv --source ${SOURCE} --place-type ${TYPE} --csv ${CSV_CURRENT}
+cp ${CSV_CURRENT} ${CSV_LATEST}
 
 echo "remove old GeoJSON files for ${TYPE}"
 
@@ -137,7 +137,7 @@ do
 done
 
 echo "generate feature collection for ${TYPE} - ${GEOJSON}"
-/usr/local/bin/mzg-csv-to-feature-collection --source fs --prefix ${SOURCE} --csv ${CSV_CURRENT} --out ${GEOJSON} --max
+/usr/local/bin/mzg-csv-to-feature-collection --source fs --prefix ${SOURCE} --csv ${CSV_CURRENT} --out ${GEOJSON} --max 50000
 
 echo "generate shapefiles for ${TYPE}"
 
