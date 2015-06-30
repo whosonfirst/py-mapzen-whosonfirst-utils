@@ -81,6 +81,45 @@ Copy the files listed in an CSV file – produced by `mzg-placetype-to-csv` or s
 
 Note the `--meta` flag. This will also copy the CSV file in question to a `meta` folder in the S3 bucket.
 
+## For example
+
+### bundle-placetype.sh
+
+```
+TYPE=$1
+YMD=`date "+%Y%m%d"`
+
+SOURCE=/usr/local/mapzen/gazetteer-local
+META=${SOURCE}/meta
+BUNDLE=${SOURCE}/bundle
+
+CSV_CURRENT=${META}/mzg-${TYPE}-${YMD}.csv
+CSV_LATEST=${META}/mzg-${TYPE}-latest.csv
+
+GEOJSON=/usr/local/mapzen/gazetteer-bundles/${TYPE}/${TYPE}.geojson
+SHAPEFILE=/usr/local/mapzen/gazetteer-bundles/${TYPE}/${TYPE}.shp
+
+ROOT=`dirname ${GEOJSON}`
+
+if [ ! -d ${ROOT} ]
+then
+    mkdir ${ROOT}
+fi
+
+echo "generate CSV bundle for ${TYPE} - ${CSV_CURRENT}"
+/usr/local/bin/mzg-placetype-to-csv --source ${SOURCE} --place-type ${TYPE} --csv ${CSV_CURRENT}
+cp ${CSV_CURRENT} ${CSV_LATEST}
+
+echo "generate feature collection for ${TYPE} - ${GEOJSON}"
+/usr/local/bin/mzg-csv-to-feature-collection --source fs --prefix ${SOURCE} --csv ${CSV_CURRENT} --out ${GEOJSON}
+
+echo "generate shapefile for ${TYPE} - ${SHAPEFILE}"
+ogr2ogr -overwrite -F 'ESRI Shapefile' ${SHAPEFILE} ${GEOJSON}
+
+echo "all done"
+exit 0;
+```
+
 ## Known knowns
 
 * The `mzg-csv-to-s3` tool does not overwrite files or offer any logic for comparing two files.
