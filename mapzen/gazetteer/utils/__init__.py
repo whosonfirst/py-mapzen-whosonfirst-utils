@@ -6,6 +6,7 @@ import requests
 import json
 import os.path
 import logging
+import re
 
 def id2fqpath(root, id):
 
