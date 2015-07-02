@@ -99,6 +99,25 @@ Note the `--meta` flag. This will also copy the CSV file in question to a `meta`
 
 By default this tool does not replace existing files. You can toggle this setting by passing the `--overwrite` flags.
 
+### mzg-dump-concordances
+
+Dump all the concordances in Mapzen gazetteer to a CSV file:
+
+```
+$> /usr/local/bin/mzg-dump-concordances -s /usr/local/mapzen/gazetteer-local -c /usr/local/mapzen/gazetteer-local/meta/mzg-concordances-20150702.csv
+$> cp /usr/local/mapzen/gazetteer-local/meta/mzg-concordances-20150702.csv /usr/local/mapzen/gazetteer-local/meta/mzg-concordances-latest.csv
+```
+
+### mzg-concordances-to-db
+
+Create a `sqlite3` database from a CSV file created by the `mzg-dump-concordances` tool:
+
+```
+$> /usr/local/bin/mzg-concordances-to-db /usr/local/mapzen/gazetteer-local/meta/mzg-concordances-latest.csv /usr/local/mapzen/gazetteer-concordances/mzg-concordances.db
+```
+
+_Note: This is actually a shell script, but there you go.```
+
 ## For example
 
 ### bundle-placetype.sh
