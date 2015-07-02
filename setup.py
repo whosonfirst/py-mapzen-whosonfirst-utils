@@ -6,9 +6,9 @@ packages = find_packages()
 desc = open("README.md").read(),
 
 setup(
-    name='mapzen.gazetteer.utils',
+    name='mapzen.gazetteer',
     namespace_packages=['mapzen', 'mapzen.gazetteer', 'mapzen.gazetteer.utils'],
-    version='0.16',
+    version='0.17',
     description='Simple Python wrapper for managing Mapzen Gazetteer related functions',
     author='Mapzen',
     url='https://github.com/mapzen/py-mapzen-gazetter',
@@ -28,5 +28,5 @@ setup(
         'scripts/mzg-csv-to-feature-collection',
         'scripts/mzg-csv-to-s3',
         ],
-    download_url='https://github.com/thisisaaronland/py-mapzen-gazetteer/releases/tag/v0.16',
+    download_url='https://github.com/thisisaaronland/py-mapzen-gazetteer/releases/tag/v0.17',
     license='BSD')
