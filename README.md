@@ -80,7 +80,7 @@ $> /usr/local/mapzen/py-mapzen-gazetteer/scripts/mzg-csv-to-feature-collection -
 Which would produce something like this:
 
 ```
-ll ../gazetteer-bundles/locality/*.geojson
+$> ll ../gazetteer-bundles/locality/*.geojson
 -rw-r--r-- 1 ubuntu ubuntu 457624245 Jun 30 18:41 ../gazetteer-bundles/locality/locality-1.geojson
 -rw-r--r-- 1 ubuntu ubuntu 183653688 Jun 30 18:41 ../gazetteer-bundles/locality/locality-2.geojson
 -rw-r--r-- 1 ubuntu ubuntu 232375434 Jun 30 18:41 ../gazetteer-bundles/locality/locality-3.geojson
@@ -92,7 +92,7 @@ ll ../gazetteer-bundles/locality/*.geojson
 Copy the files listed in an CSV file – produced by `mzg-placetype-to-csv` or similar – to an S3 bucket:
 
 ```
-/usr/local/bin/mzg-csv-to-s3 --source /usr/local/mapzen/gazetteer --csv /usr/local/mapzen/mzg-region-20150625.csv --bucket com.mapzen.gazetteer --config aws.cfg --meta
+$> /usr/local/bin/mzg-csv-to-s3 --source /usr/local/mapzen/gazetteer --csv /usr/local/mapzen/mzg-region-20150625.csv --bucket com.mapzen.gazetteer --config aws.cfg --meta
 ```
 
 Note the `--meta` flag. This will also copy the CSV file in question to a `meta` folder in the S3 bucket.
@@ -116,7 +116,7 @@ Create a `sqlite3` database from a CSV file created by the `mzg-dump-concordance
 $> /usr/local/bin/mzg-concordances-to-db /usr/local/mapzen/gazetteer-local/meta/mzg-concordances-latest.csv /usr/local/mapzen/gazetteer-concordances/mzg-concordances.db
 ```
 
-_Note: This is actually a shell script, but there you go.```
+_Note: This is actually a shell script, but there you go._
 
 ## For example
 
