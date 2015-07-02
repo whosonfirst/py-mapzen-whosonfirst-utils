@@ -2,6 +2,19 @@ import shapely.geometry
 import requests
 import json
 
+def id2fqpath(root, id):
+
+    fname = id2fname(id)
+    parent = id2path(id)
+
+    root = os.path.join(root, parent)
+    path = os.path.join(root, fname)
+
+    return path
+
+def id2fname(id):
+    return "%s.geojson" % id
+
 def id2path(id):
 
     tmp = str(id)

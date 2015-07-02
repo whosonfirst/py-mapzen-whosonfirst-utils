@@ -48,6 +48,8 @@ if __name__ == '__main__':
         'iso': '',
         'bbox': '',
         'geomhash': '',
+        'woe_id': 0,
+        'geonames_id': 0,
         }
 
     fn = defaults.keys()
@@ -74,7 +76,7 @@ if __name__ == '__main__':
                 data = geojson.load(fh)
             except Exception, e:
                 logging.error("failed to process %s, because %s" % (f, e))
-                raise Exception, e
+                continue
 
             props = data['properties']
             placetype = props.get('mz:placetype', None)
@@ -135,6 +137,8 @@ if __name__ == '__main__':
                 bbox = ",".join(bbox)
                 out['bbox'] = bbox
 
+            out['geonames_id'] = props.get('gn:id', 0)
+            out['woe_id'] = props.get('woe:id', 0)
             out['iso'] = props.get('iso:country', '')
             out['lastmodified'] = props.get('mz:lastmodified', 0)
             out['geomhash'] = props.get('mz:geomhash', '')
