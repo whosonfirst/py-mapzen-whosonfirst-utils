@@ -5,6 +5,7 @@ import shapely.geometry
 import requests
 import json
 import os.path
+import logging
 
 def id2fqpath(root, id):
 
@@ -33,7 +34,7 @@ def id2path(id):
 
     return "/".join(parts)
 
-def generate_id(self):
+def generate_id():
 
     url = 'http://api.brooklynintegers.com/rest/'
     params = {'method':'brooklyn.integers.create'}
