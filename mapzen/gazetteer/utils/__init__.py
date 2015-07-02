@@ -4,6 +4,7 @@ __import__('pkg_resources').declare_namespace(__name__)
 import shapely.geometry
 import requests
 import json
+import os.path
 
 def id2fqpath(root, id):
 
