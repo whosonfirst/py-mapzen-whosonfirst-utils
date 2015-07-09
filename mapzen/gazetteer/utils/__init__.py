@@ -3,7 +3,9 @@ __import__('pkg_resources').declare_namespace(__name__)
 
 import shapely.geometry
 import requests
+import geojson
 import json
+import os
 import os.path
 import logging
 import re
@@ -68,3 +70,27 @@ def ensure_bbox(f):
         geom = f['geometry']
         shp = shapely.geometry.asShape(geom)
         f['bbox'] = list(shp.bounds)
+
+def crawl(root, **kwargs):
+
+    validate = kwargs.get('validate', False)
+
+    for (root, dirs, files) in os.walk(root):
+
+        for f in files:
+            path = os.path.join(root, f)
+            path = os.path.abspath(path)
+
+            if not path.endswith('geojson'):
+                continue
+
+            if validate:
+                try:
+                    fh = open(path, 'r')
+                    data = geojson.load(fh)
+                except Exception, e:
+                    logging.error("failed to load %s, because %s" % (path, e))
+                    continue
+
+            yield path
+    
