@@ -103,6 +103,13 @@ if __name__ == '__main__':
 
             fdata = open(path, 'r')
 
+        try:
+            geojson.load(fdata)
+            fdata.seek(0)
+        except Exception, e:
+            logging.error("failed to parse %s, because %s" % (path, e))
+            raise Exception, "SAD FACE"
+
         if not out:
 
             if options.out:

@@ -74,6 +74,7 @@ def ensure_bbox(f):
 def crawl(root, **kwargs):
 
     validate = kwargs.get('validate', False)
+    inflate = kwargs.get('inflate', False)
 
     for (root, dirs, files) in os.walk(root):
 
@@ -81,16 +82,22 @@ def crawl(root, **kwargs):
             path = os.path.join(root, f)
             path = os.path.abspath(path)
 
+            ret = path
+
             if not path.endswith('geojson'):
                 continue
 
-            if validate:
+            if validate or inflate:
+
                 try:
                     fh = open(path, 'r')
                     data = geojson.load(fh)
+
                 except Exception, e:
                     logging.error("failed to load %s, because %s" % (path, e))
                     continue
 
-            yield path
+                ret = data
+
+            yield ret
     
