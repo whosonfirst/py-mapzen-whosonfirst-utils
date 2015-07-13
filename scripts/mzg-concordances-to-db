@@ -7,19 +7,19 @@ SQLITE=`which sqlite3`
 
 if [ "${CSV}" = "" ]
 then
-    echo "usage: mzg-concordances-to-db /path/to/CSV_FILE /path/to/SQLITE_DB"
+    echo "usage: wof-concordances-to-db /path/to/CSV_FILE /path/to/SQLITE_DB"
     exit 1
 fi
 
 if [ "${DB}" = "" ]
 then
-    echo "usage: mzg-concordances-to-db /path/to/CSV_FILE /path/to/SQLITE_DB"
+    echo "usage: wof-concordances-to-db /path/to/CSV_FILE /path/to/SQLITE_DB"
     exit 1
 fi
 
 if [ ! -f ${CSV} ]
 then
-    echo "usage: mzg-concordances-to-db /path/to/CSV_FILE /path/to/SQLITE_DB"
+    echo "usage: wof-concordances-to-db /path/to/CSV_FILE /path/to/SQLITE_DB"
     exit 1
 fi
 

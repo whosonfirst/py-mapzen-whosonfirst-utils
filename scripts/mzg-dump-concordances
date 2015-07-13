@@ -30,7 +30,7 @@ if __name__ == '__main__':
         path = os.path.abspath(options.csv)
         fh = open(path, 'w')
 
-    fn = ('id', 'woe_id', 'geonames_id', 'quattroshapes_id', 'iso', 'placetype')
+    fn = ('id', 'geoplanet_id', 'geonames_id', 'quattroshapes_id', 'iso', 'placetype')
 
     writer = csv.DictWriter(fh, fieldnames=fn)
     writer.writeheader()
@@ -57,17 +57,17 @@ if __name__ == '__main__':
 
             props = data['properties']
 
-            if props.get('mz:placetype', '') == 'venue':
+            if props.get('wof:placetype', '') == 'venue':
                 logging.debug("skipping venues for now")
                 continue
 
             out = {
-                'id' : props.get('mz:id', 0),
-                'woe_id' : props.get('woe:id', 0),
+                'id' : props.get('wof:id', 0),
+                'geoplanet_id' : props.get('gp:id', 0),
                 'geonames_id' : props.get('gn:id', 0),
                 'quattroshapes_id' : props.get('qs:id', 0),
                 'iso': props.get('iso:country', ''),
-                'placetype': props.get('mz:placetype', '')
+                'placetype': props.get('wof:placetype', '')
             }
 
             writer.writerow(out)

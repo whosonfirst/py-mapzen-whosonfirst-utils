@@ -48,7 +48,7 @@ if __name__ == '__main__':
         'iso': '',
         'bbox': '',
         'geomhash': '',
-        'woe_id': 0,
+        'gp_id': 0,
         'geonames_id': 0,
         }
 
@@ -79,10 +79,10 @@ if __name__ == '__main__':
                 continue
 
             props = data['properties']
-            placetype = props.get('mz:placetype', None)
+            placetype = props.get('wof:placetype', None)
 
             if not placetype:
-                logging.warning("%s is missing an mz:placetype property" % f)
+                logging.warning("%s is missing an wof:placetype property" % f)
                 continue
 
             if placetype != options.place:
@@ -91,18 +91,18 @@ if __name__ == '__main__':
 
             out = defaults
 
-            mzid = props.get('mz:id', 0)
+            wofid = props.get('wof:id', 0)
 
-            if mzid == 0:
-                logging.warning("%s is missing an mz:id property, using filename" % f)
+            if wofid == 0:
+                logging.warning("%s is missing an wof:id property, using filename" % f)
                 fname = os.path.basename(f)
-                mzid = fname.replace(".geojson", "")
+                wofid = fname.replace(".geojson", "")
 
-            out['id'] = mzid
+            out['id'] = wofid
 
-            out['parent_id'] = props.get('mz:parent_id', 0)
+            out['parent_id'] = props.get('wof:parent_id', 0)
 
-            name = props.get('mz:name', None)
+            name = props.get('wof:name', None)
 
             if not name:
                 name = props.get('name', None)
@@ -113,13 +113,13 @@ if __name__ == '__main__':
             name = name.encode('utf8')
             out['name'] = name
 
-            source = props.get("mz:source", None)
+            source = props.get("wof:source", None)
             
             if not source:
-                source = props.get("mz:datasource", None)
+                source = props.get("wof:datasource", None)
 
             if not source:
-                logging.warning("%s is missing a mz:source property" % f)
+                logging.warning("%s is missing a wof:source property" % f)
                 source = ""
 
             out['source'] = source
@@ -138,9 +138,9 @@ if __name__ == '__main__':
                 out['bbox'] = bbox
 
             out['geonames_id'] = props.get('gn:id', 0)
-            out['woe_id'] = props.get('woe:id', 0)
+            out['gp_id'] = props.get('gp:id', 0)
             out['iso'] = props.get('iso:country', '')
-            out['lastmodified'] = props.get('mz:lastmodified', 0)
-            out['geomhash'] = props.get('mz:geomhash', '')
+            out['lastmodified'] = props.get('wof:lastmodified', 0)
+            out['geomhash'] = props.get('wof:geomhash', '')
 
             writer.writerow(out)
