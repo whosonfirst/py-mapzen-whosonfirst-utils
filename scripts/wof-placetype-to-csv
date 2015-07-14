@@ -137,8 +137,10 @@ if __name__ == '__main__':
                 bbox = ",".join(bbox)
                 out['bbox'] = bbox
 
-            out['geonames_id'] = props.get('gn:id', 0)
-            out['gp_id'] = props.get('gp:id', 0)
+            concordances = props.get('wof:concordances', {})
+            out['geonames_id'] = concordances.get('gn:id', 0)
+            out['gp_id'] = concordances.get('gp:id', 0)
+
             out['iso'] = props.get('iso:country', '')
             out['lastmodified'] = props.get('wof:lastmodified', 0)
             out['geomhash'] = props.get('wof:geomhash', '')

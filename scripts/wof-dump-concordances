@@ -61,11 +61,13 @@ if __name__ == '__main__':
                 logging.debug("skipping venues for now")
                 continue
 
+            concordances = props.get('wof:concordances', {})
+
             out = {
                 'id' : props.get('wof:id', 0),
-                'geoplanet_id' : props.get('gp:id', 0),
-                'geonames_id' : props.get('gn:id', 0),
-                'quattroshapes_id' : props.get('qs:id', 0),
+                'geoplanet_id' : concordances.get('gp:id', 0),
+                'geonames_id' : concordances.get('gn:id', 0),
+                'quattroshapes_id' : concordances.get('qs:id', 0),
                 'iso': props.get('iso:country', ''),
                 'placetype': props.get('wof:placetype', '')
             }
