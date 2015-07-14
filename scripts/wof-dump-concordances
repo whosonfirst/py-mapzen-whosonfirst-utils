@@ -35,6 +35,8 @@ if __name__ == '__main__':
     writer = csv.DictWriter(fh, fieldnames=fn)
     writer.writeheader()
 
+    # sudo please use mapzen.gazetteer.utils.crawl
+
     for (path, dirs, files) in os.walk(source):
 
         for f in files:
