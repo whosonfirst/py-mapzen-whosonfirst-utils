@@ -48,15 +48,8 @@ def generate_id():
     except Exception, e:
         logging.error(e)
         return 0
-
-    # Note: this is because I am lazy and can't
-    # remember to update the damn code to account
-    # for PHP now issuing warnings for the weird
-    # way it does regular expressions in the first
-    # place... (20150623/thisisaaronland)
     
     try:
-        data = re.sub(r"^[^\{]+", "", data)
         data = json.loads(data)
     except Exception, e:
         logging.error(e)
