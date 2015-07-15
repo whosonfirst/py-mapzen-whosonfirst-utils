@@ -37,7 +37,14 @@ if __name__ == '__main__':
 
     writer = None
 
-    placetypes = mapzen.whosonfirst.placetypes.common()
+    # sudo make me a function or something...
+    # (20150715/thisisaaronland)
+
+    common = mapzen.whosonfirst.placetypes.common()
+    common_opt = mapzen.whosonfirst.placetypes.common_optional()
+
+    placetypes = common
+    placetypes.extend(common_opt)
 
     for path in crawl:
 
