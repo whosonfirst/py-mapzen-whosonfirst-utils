@@ -20,6 +20,15 @@ def id2fqpath(root, id):
 
     return path
 
+def id2relpath(id):
+
+    fname = id2fname(id)
+    parent = id2path(id)
+
+    path = os.path.join(parent, fname)
+    return path
+
+
 def id2fname(id):
     return "%s.geojson" % id
 

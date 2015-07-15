@@ -8,6 +8,7 @@ import pprint
 import geojson
 
 import mapzen.whosonfirst.utils
+import mapzen.whosonfirst.placetypes
 
 if __name__ == '__main__':
 
@@ -16,8 +17,8 @@ if __name__ == '__main__':
 
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Where to write concordances (default is STDOUT)')
-
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+
     options, args = opt_parser.parse_args()
 
     if options.verbose:	
@@ -36,13 +37,15 @@ if __name__ == '__main__':
 
     writer = None
 
+    placetypes = mapzen.whosonfirst.placetypes.common()
+
     for path in crawl:
 
         try:
             data_fh = open(path, 'r')
             data = geojson.load(data_fh)
         except Exception, e:
-            logging.error("failed to process %s, because %s" % (f, e))
+            logging.error("failed to process %s, because %s" % (path, e))
             continue
 
         props = data['properties']
@@ -51,21 +54,25 @@ if __name__ == '__main__':
             logging.debug("skipping venues for now")
             continue
 
-        concordances = props.get('wof:concordances', {})
+        hierarchies = props.get('wof:hierarchy', [])
 
-        out = {
-            'id' : props.get('wof:id', -1),
-            'iso': props.get('iso:country', ''),
-            'placetype': props.get('wof:placetype', '')
-            'geoplanet_id' : concordances.get('gp:id', 0),
-            'geonames_id' : concordances.get('gn:id', 0),
-            'quattroshapes_id' : concordances.get('qs:id', 0),
-        }
-
-        if not writer:
-
-            writer = csv.DictWriter(fh, fieldnames=out.keys())
-            writer.writeheader()
-
-        writer.writerow(out)
+        for hier in hierarchies:
             
+            out = {
+                'id': props.get('wof:id', -1),
+                # 'parent_id': props.get('wof:parent_id', -1),
+                'placetype': props.get('wof:placetype', ''),
+                'iso': props.get('iso:country', ''),
+                }
+            
+            for pl in placetypes:
+                k = "%s_id" % pl
+                out[k] = hier.get(k, 0)
+
+            if not writer:
+                writer = csv.DictWriter(fh, fieldnames=out.keys())
+                writer.writeheader()
+            
+            writer.writerow(out)
+
+    sys.exit()
