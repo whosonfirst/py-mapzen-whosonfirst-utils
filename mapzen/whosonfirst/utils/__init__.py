@@ -74,7 +74,7 @@ def ensure_bbox(f):
         shp = shapely.geometry.asShape(geom)
         f['bbox'] = list(shp.bounds)
 
-def crawl(root, **kwargs):
+def crawl(source, **kwargs):
 
     validate = kwargs.get('validate', False)
     inflate = kwargs.get('inflate', False)
@@ -82,7 +82,7 @@ def crawl(root, **kwargs):
     ensure = kwargs.get('ensure_placetype', [])
     skip = kwargs.get('skip_placetype', [])
 
-    for (root, dirs, files) in os.walk(root):
+    for (root, dirs, files) in os.walk(source):
 
         for f in files:
             path = os.path.join(root, f)
@@ -125,8 +125,7 @@ def crawl(root, **kwargs):
                         logging.error("can not determine placetype for %s" % path)
 
                 if not inflate:
-                    id = data['id']
-                    ret = id2abspath(root, id)
+                    ret = path
                 else:
                     ret = data
 
