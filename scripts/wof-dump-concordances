@@ -56,7 +56,7 @@ if __name__ == '__main__':
         out = {
             'id' : props.get('wof:id', -1),
             'iso': props.get('iso:country', ''),
-            'placetype': props.get('wof:placetype', '')
+            'placetype': props.get('wof:placetype', ''),
             'geoplanet_id' : concordances.get('gp:id', 0),
             'geonames_id' : concordances.get('gn:id', 0),
             'quattroshapes_id' : concordances.get('qs:id', 0),

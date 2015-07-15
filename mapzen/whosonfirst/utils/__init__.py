@@ -79,6 +79,9 @@ def crawl(root, **kwargs):
     validate = kwargs.get('validate', False)
     inflate = kwargs.get('inflate', False)
 
+    ensure = kwargs.get('ensure_placetype', [])
+    skip = kwargs.get('skip_placetype', [])
+
     for (root, dirs, files) in os.walk(root):
 
         for f in files:
@@ -90,7 +93,7 @@ def crawl(root, **kwargs):
             if not path.endswith('geojson'):
                 continue
 
-            if validate or inflate:
+            if validate or inflate or len(skip) or len(ensure):
 
                 try:
                     fh = open(path, 'r')
@@ -100,7 +103,32 @@ def crawl(root, **kwargs):
                     logging.error("failed to load %s, because %s" % (path, e))
                     continue
 
-                ret = data
+                if len(ensure):
+
+                    props = data['properties']
+                    pt = props.get('wof:placetype', None)
+
+                    if not pt in ensure:
+                        logging.debug("skipping %s because it is a %s" % (path, pt))
+                        continue
+
+                elif len(skip):
+
+                    props = data['properties']
+                    pt = props.get('wof:placetype', None)
+
+                    if pt in skip:
+                        logging.debug("skipping %s because it is a %s" % (path, pt))
+                        continue
+
+                    if not pt:
+                        logging.error("can not determine placetype for %s" % path)
+
+                if not inflate:
+                    id = data['id']
+                    ret = id2abspath(root, id)
+                else:
+                    ret = data
 
             yield ret
     
