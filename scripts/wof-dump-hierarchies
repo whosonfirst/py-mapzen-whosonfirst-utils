@@ -44,7 +44,9 @@ if __name__ == '__main__':
     common_opt = mapzen.whosonfirst.placetypes.common_optional()
 
     placetypes = common
-    placetypes.extend(common_opt)
+    placetypes.append("county")
+
+    # placetypes.extend(common_opt)
 
     for path in crawl:
 
