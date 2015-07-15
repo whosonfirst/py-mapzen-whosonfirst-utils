@@ -11,13 +11,14 @@ import logging
 import re
 
 def id2fqpath(root, id):
+    logging.warning("deprecated use of id2fqpath, please use id2abspath")
+    return id2abspath(root, id)
 
-    fname = id2fname(id)
-    parent = id2path(id)
+def id2abspath(root, id):
 
-    root = os.path.join(root, parent)
-    path = os.path.join(root, fname)
+    rel = id2relpath(id)
 
+    path = os.path.join(root, rel)
     return path
 
 def id2relpath(id):
