@@ -17,6 +17,7 @@ if __name__ == '__main__':
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Where to write concordances (default is STDOUT)')
 
+    opt_parser.add_option('-e', '--ensure', dest='ensure', action='store_true', default=False, help='Ensure that at least one concordance exists (default is False)')
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     options, args = opt_parser.parse_args()
 
@@ -24,6 +25,9 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
+
+    # to do: update to allow the passing of skip/ensure placetype
+    # flags (20150716/thisisaaronland)
 
     source = os.path.abspath(options.source)
     crawl = mapzen.whosonfirst.utils.crawl(source)
@@ -47,11 +51,11 @@ if __name__ == '__main__':
 
         props = data['properties']
 
-        if props.get('wof:placetype', '') == 'venue':
-            logging.debug("skipping venues for now")
-            continue
-
         concordances = props.get('wof:concordances', {})
+
+        if options.ensure:
+            if not len(concordances.keys()):
+                continue
 
         out = {
             'id' : props.get('wof:id', -1),
