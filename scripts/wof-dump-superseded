@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import logging
+import csv
+
+import mapzen.whosonfirst.utils
+
+if __name__ == '__main__':
+
+    import optparse
+    opt_parser = optparse.OptionParser()
+    
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
+    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Where to write concordances (default is STDOUT)')
+    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+    
+    options, args = opt_parser.parse_args()
+    
+    if options.verbose:	
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+        
+    source = os.path.abspath(options.source)
+    crawl = mapzen.whosonfirst.utils.crawl(source, inflate=True)
+        
+    out_fh = sys.stdout
+
+    if options.csv:
+        out_fh = open(options.csv, 'w')
+
+    writer = None
+
+    for record in crawl:
+
+        props = record['properties']
+        id = props['wof:id']
+       
+        supersedes = props.get('wof:supersedes', [])
+        superseded_by = props.get('wof:superseded_by', [])
+
+        if len(supersedes) == 0 and len(superseded_by) == 0:
+            continue
+
+        out = {
+            'id': id,
+            'supersedes': ",".join(map(str, supersedes)),
+            'superseded_by': ",".join(map(str, superseded_by))
+        }
+
+        if not writer:
+            writer = csv.DictWriter(out_fh, fieldnames=out.keys())
+         
+        writer.writerow(out)

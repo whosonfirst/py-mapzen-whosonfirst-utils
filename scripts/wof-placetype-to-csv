@@ -48,8 +48,8 @@ if __name__ == '__main__':
         'iso': '',
         'bbox': '',
         'geomhash': '',
-        'gp_id': 0,
-        'geonames_id': 0,
+        'supersedes': '',
+        'superseded_by': '',
         }
 
     fn = defaults.keys()
@@ -137,9 +137,16 @@ if __name__ == '__main__':
                 bbox = ",".join(bbox)
                 out['bbox'] = bbox
 
+            """
             concordances = props.get('wof:concordances', {})
             out['geonames_id'] = concordances.get('gn:id', 0)
             out['gp_id'] = concordances.get('gp:id', 0)
+            """
+
+            supersedes = props.get('wof:supersedes', [])
+            superseded_by = props.get('wof:superseded_by', [])
+            out['supersedes'] = ",".join(map(str, supersedes))
+            out['superseded_by'] = ",".join(map(str, superseded_by))
 
             out['iso'] = props.get('iso:country', '')
             out['lastmodified'] = props.get('wof:lastmodified', 0)
