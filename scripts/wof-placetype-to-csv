@@ -13,7 +13,7 @@ if __name__ == '__main__':
     opt_parser = optparse.OptionParser()
 
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
-    opt_parser.add_option('-p', '--place-type', dest='place', action='store', default=None, help='')
+    opt_parser.add_option('-p', '--placetype', dest='place', action='store', default=None, help='')
     opt_parser.add_option('-a', '--abspath', dest='abspath', action='store_true', default=False, help='Write absolute paths')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Where to write concordances (default is STDOUT)')
 
