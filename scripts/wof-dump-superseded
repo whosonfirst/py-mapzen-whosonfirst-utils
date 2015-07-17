@@ -51,6 +51,11 @@ if __name__ == '__main__':
         }
 
         if not writer:
-            writer = csv.DictWriter(out_fh, fieldnames=out.keys())
-         
+
+            fn = out.keys()
+            fn.sort()
+
+            writer = csv.DictWriter(out_fh, fieldnames=fn)
+            writer.writeheader()
+
         writer.writerow(out)
