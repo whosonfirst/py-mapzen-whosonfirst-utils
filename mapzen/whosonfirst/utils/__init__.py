@@ -10,28 +10,41 @@ import os.path
 import logging
 import re
 
-def id2fqpath(root, id):
+def load(root, id, **kwargs):
+
+    path = id2abspath(root, id, **kwargs)
+
+    if not os.path.exists(path):
+        raise Exception, "%s does not exist" % path
+
+    fh = open(path, 'r')
+    return geojson.load(fh)
+
+def id2fqpath(root, id, **kwargs):
     logging.warning("deprecated use of id2fqpath, please use id2abspath")
-    return id2abspath(root, id)
+    return id2abspath(root, id, **kwargs)
 
-def id2abspath(root, id):
+def id2abspath(root, id, **kwargs):
 
-    rel = id2relpath(id)
+    rel = id2relpath(id, **kwargs)
 
     path = os.path.join(root, rel)
     return path
 
-def id2relpath(id):
+def id2relpath(id, **kwargs):
 
-    fname = id2fname(id)
+    fname = id2fname(id, **kwargs)
     parent = id2path(id)
 
     path = os.path.join(parent, fname)
     return path
 
+def id2fname(id, **kwargs):
 
-def id2fname(id):
-    return "%s.geojson" % id
+    if kwargs.get('alt', False):
+        return "%s-alt.geojson" % id
+    else:
+        return "%s.geojson" % id
 
 def id2path(id):
 
