@@ -28,6 +28,13 @@ if __name__ == '__main__':
         logging.error("Missing WOF ID")
         sys.exit()
 
+    # See this - it is the current way of doing things but not the
+    # ideal way of doing things. It should be possible to pass a
+    # GeoJSON file as part of 'args' and have the code look for the
+    # new consensus polygon in there and I guess importing any 
+    # additional polygons as alternates along the way...maybe?
+    # (20150720/thisisaaronland)
+
     if not options.geom:
         logging.error("Missing geom source (for new consensus geometry)")
         sys.exit()
@@ -109,18 +116,24 @@ if __name__ == '__main__':
 
     if alt_area:
         wof_props['geom:area'] = alt_area
-    else:
+    elif wof_props.get('geom:area', None):
         del(wof_props['geom:area'])
+    else:
+        pass
 
     if alt_lat:
         wof_props['geom:latitude'] = alt_lat
-    else:
+    elif wof_props.get('geom:latitude', None):
         del(wof_props['geom:latitude'])
+    else:
+        pass
 
     if alt_lon:
         wof_props['geom:longitude'] = alt_lon
-    else:
+    elif wof_props.get('geom:latitude', None):
         del(wof_props['geom:longitude'])
+    else:
+        pass
 
     wof_feature['properties'] = wof_props
 
@@ -179,6 +192,11 @@ if __name__ == '__main__':
 
     exporter = mapzen.whosonfirst.export.flatfile(source)
     exporter.export_feature(wof_feature)
+
+    # See this - it is totally NOT AWESOME and is a by-product
+    # of not needing/expecting to write feature collections in
+    # the exporter code. It can be taught those new tricks but
+    # time and typing... (20150720/thisisaaronland)
 
     alt_fh = open(alt_path, 'w')
     exporter.write_json(alt_feature_collection, alt_fh)
