@@ -1,0 +1,189 @@
+#!/usr/bin/env python
+
+import sys
+import logging
+import os.path
+import pprint
+
+import mapzen.whosonfirst.utils
+import mapzen.whosonfirst.export
+
+if __name__ == '__main__':
+
+    import optparse
+    opt_parser = optparse.OptionParser()
+
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
+    opt_parser.add_option('-g', '--geom', dest='geom', action='store', default=None, help='The geometry to promote')
+    opt_parser.add_option('-i', '--id', dest='id', action='store', default=None, help='The WOF ID of the record to update')	
+    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+    options, args = opt_parser.parse_args()
+
+    if options.verbose:	
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    if not options.id:
+        logging.error("Missing WOF ID")
+        sys.exit()
+
+    if not options.geom:
+        logging.error("Missing geom source (for new consensus geometry)")
+        sys.exit()
+
+    source = os.path.abspath(options.source)
+    id = int(options.id)
+
+    # Hello world?
+
+    wof_path = mapzen.whosonfirst.utils.id2abspath(source, id)
+    alt_path = mapzen.whosonfirst.utils.id2abspath(source, id, alt=True)
+
+    if not os.path.exists(wof_path):
+        logging.error("record for %s (%s) does not exist" % (id, wof_path))
+        sys.exit()
+
+    if not os.path.exists(alt_path):
+        logging.error("alt record for %s (%s) does not exist" % (id, alt_path))
+        sys.exit()
+    
+    wof_feature = mapzen.whosonfirst.utils.load(source, id)
+    alt_feature_collection = mapzen.whosonfirst.utils.load(source, id, alt=True)
+
+    # Are we chasing our tail?
+
+    wof_props = wof_feature['properties']
+    wof_geom = wof_props.get('src:geom', None)
+
+    if wof_geom and wof_geom == options.geom:
+        logging.error("%s is already the consensus geometry")
+        sys.exit()
+
+    # Now make sure we have something to promote
+
+    alt_feature = None
+
+    for f in alt_feature_collection['features']:
+
+        if f['properties'].get('src:geom', None) == options.geom:
+            alt_feature = f
+            break
+
+    if not alt_feature:
+        logging.error("can not find any features whose source is %s (in %s)" % (options.geom, alt_path))
+        sys.exit()
+
+    # Now the fun stuff starts...
+
+    # Pull out the relevant bits to switch
+
+    wof_bbox = wof_feature.get('bbox', None)
+    alt_bbox = alt_feature.get('bbox', None)
+
+    wof_geom = wof_feature['geometry']
+    alt_geom = alt_feature['geometry']
+
+    wof_props = wof_feature['properties']
+    alt_props = alt_feature['properties']
+
+    wof_src = wof_props.get('src:geom', None)
+    wof_area = wof_props.get('geom:area', None)
+    wof_lat = wof_props.get('geom:latitude', None)
+    wof_lon = wof_props.get('geom:longitude', None)
+
+    alt_src = alt_props.get('src:geom', None)
+    alt_area = alt_props.get('geom:area', None)
+    alt_lat = alt_props.get('geom:latitude', None)
+    alt_lon = alt_props.get('geom:longitude', None)
+
+    # Update the primary record
+
+    wof_feature['geometry'] = alt_geom
+    wof_props['src:geom'] = alt_src
+
+    if alt_bbox:
+        wof_feature['bbox'] = alt_bbox
+    else:
+        del(wof_feature['bbox'])
+
+    if alt_area:
+        wof_props['geom:area'] = alt_area
+    else:
+        del(wof_props['geom:area'])
+
+    if alt_lat:
+        wof_props['geom:latitude'] = alt_lat
+    else:
+        del(wof_props['geom:latitude'])
+
+    if alt_lon:
+        wof_props['geom:longitude'] = alt_lon
+    else:
+        del(wof_props['geom:longitude'])
+
+    wof_feature['properties'] = wof_props
+
+    # Now create a new alt record/feature
+
+    new_geom = wof_geom
+
+    new_props = {
+        "wof:id": id,
+        "src:geom": wof_src,
+    }
+
+    if wof_area:
+        new_props['geom:area'] = wof_area
+
+    if wof_lat:
+        new_props['geom:latitude'] = wof_lat
+
+    if wof_lon:
+        new_props['geom:longitude'] = wof_lon
+
+    new_feature = {
+        'type': 'Feature',
+        'geometry': new_geom,
+        'properties': new_props
+    }
+
+    if wof_bbox:
+        new_feature['bbox'] = wof_bbox
+
+    """
+    print pprint.pformat(wof_feature.keys())
+    print pprint.pformat(wof_props)
+
+    print pprint.pformat(new_feature.keys())
+    print pprint.pformat(new_props)
+    """
+
+    # rebuild the alt collection
+
+    # There is probably a more clever (efficient even) way to do this
+    # but oh well, this is what we do today (20150720/thisisaaronland)
+
+    new_collection = []
+
+    for f in alt_feature_collection['features']:
+
+        if f['properties'].get('src:geom', None) == options.geom:        
+            new_collection.append(new_feature)
+        else:
+            new_collection.append(f)
+
+    alt_feature_collection['features'] = new_collection
+
+    # Export!
+
+    exporter = mapzen.whosonfirst.export.flatfile(source)
+    exporter.export_feature(wof_feature)
+
+    alt_fh = open(alt_path, 'w')
+    exporter.write_json(alt_feature_collection, alt_fh)
+
+    logging.info("updated %s" % wof_path)
+    logging.info("updated %s" % alt_path)
+
+    sys.exit()
