@@ -10,6 +10,10 @@ import csv
 
 import mapzen.whosonfirst.utils
 
+# something something something global variables and/or
+# pass-by-reference in a multiprocessing environment something
+# something something yak-shaving (20150720/thisisaaronland)
+
 INVENTORY = {}
 
 def process(args):
@@ -34,13 +38,17 @@ if __name__ == '__main__':
 
     opt_parser = optparse.OptionParser()
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
-    opt_parser.add_option('-m', '--multiprocessing', dest='multi', action='store_true', default=False, help='Use ALL THE PROCESSORS (default if False)')
+
+    # see above inre multiprocessing
+    # opt_parser.add_option('-m', '--multiprocessing', dest='multi', action='store_true', default=False, help='Use ALL THE PROCESSORS (default if False)')
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is False)')
 
     options, args = opt_parser.parse_args()
 
     source = os.path.abspath(options.source)
     crawl = mapzen.whosonfirst.utils.crawl(source)
+
+    # see above inre multiprocessing
 
     """
     if options.multi:
