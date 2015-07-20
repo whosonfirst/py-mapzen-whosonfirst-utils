@@ -8,7 +8,7 @@ desc = open("README.md").read(),
 setup(
     name='mapzen.whosonfirst.utils',
     namespace_packages=['mapzen', 'mapzen.whosonfirst', 'mapzen.whosonfirst.utils'],
-    version='0.28',
+    version='0.29',
     description='Simple Python wrapper for Who\'s On First helper functions',
     author='Mapzen',
     url='https://github.com/mapzen/py-mapzen-whosonfirst-utils',
@@ -33,5 +33,5 @@ setup(
         'scripts/wof-csv-to-s3',
         'scripts/wof-supersede',
         ],
-    download_url='https://github.com/mapzen/py-mapzen-whosonfirst-utils/releases/tag/v0.28',
+    download_url='https://github.com/mapzen/py-mapzen-whosonfirst-utils/releases/tag/v0.29',
     license='BSD')

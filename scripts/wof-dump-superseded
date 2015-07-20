@@ -44,10 +44,15 @@ if __name__ == '__main__':
         if len(supersedes) == 0 and len(superseded_by) == 0:
             continue
 
+        # the exact key names remains TBD...
+        # (20150720/thisisaaronland)
+        notes = props.get('wof:superseded_by_notes, '')
+
         out = {
             'id': id,
             'supersedes': ",".join(map(str, supersedes)),
-            'superseded_by': ",".join(map(str, superseded_by))
+            'superseded_by': ",".join(map(str, superseded_by)),
+            'notes': notes
         }
 
         if not writer:
