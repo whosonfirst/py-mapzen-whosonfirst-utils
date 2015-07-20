@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+
+import sys
+import os.path
+import logging
+import geojson
+import multiprocessing
+import pprint
+import csv
+
+import mapzen.whosonfirst.utils
+
+INVENTORY = {}
+
+def process(args):
+
+    path, = args
+
+    fh = open(path, 'r')
+    data = geojson.load(fh)
+    
+    props = data['properties']
+
+    for k in props.keys():
+
+        if INVENTORY.get(k, False):
+            INVENTORY[k] += 1
+        else:
+            INVENTORY[k] = 1
+    
+if __name__ == '__main__':
+
+    import optparse
+
+    opt_parser = optparse.OptionParser()
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
+    opt_parser.add_option('-m', '--multiprocessing', dest='multi', action='store_true', default=False, help='Use ALL THE PROCESSORS (default if False)')
+    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is False)')
+
+    options, args = opt_parser.parse_args()
+
+    source = os.path.abspath(options.source)
+    crawl = mapzen.whosonfirst.utils.crawl(source)
+
+    """
+    if options.multi:
+
+        processes = multiprocessing.cpu_count() * 2
+        pool = multiprocessing.Pool(processes=processes)
+
+        batch = []
+        batch_size = 10000
+
+        for path in crawl:
+
+            batch.append((path, ))
+
+            if len(batch) >= batch_size:
+
+                pool.map(process, batch)
+                batch = []
+
+                break
+
+        if len(batch):
+            pool.map(process, batch)
+
+    else:
+
+        for path in crawl:
+            process((path, ))
+    """
+
+    for path in crawl:
+        process((path, ))
+
+    outfh = sys.stdout
+    writer = csv.writer(outfh)
+
+    keys = INVENTORY.keys()
+    keys.sort()
+
+    for k in keys:
+        out = (k, INVENTORY[k])
+        writer.writerow(out)
+
+    # print pprint.pformat(INVENTORY)
+
+    logging.info("all done")
+    sys.exit()
+    
