@@ -7,6 +7,8 @@ import csv
 import pprint
 import geojson
 
+import mapzen.whosonfirst.utils
+
 if __name__ == '__main__':
 
     import optparse
@@ -32,6 +34,8 @@ if __name__ == '__main__':
     # sanity check place type here
 
     source = os.path.abspath(options.source)
+    crawl = mapzen.whosonfirst.utils.crawl(source)
+
     fh = sys.stdout
 
     if options.csv:
@@ -58,98 +62,86 @@ if __name__ == '__main__':
     writer = csv.DictWriter(fh, fieldnames=fn)
     writer.writeheader()
 
-    for (path, dirs, files) in os.walk(source):
+    for path in crawl:
 
-        for f in files:
+        logging.debug("checking %s" % path)
 
-            f = os.path.join(path, f)
-            f = os.path.abspath(f)
+        try:
+            fh = open(path, 'r')
+            data = geojson.load(fh)
+        except Exception, e:
+            logging.error("failed to load %s, because %s" % (path, e))
+            continue
 
-            if not f.endswith(".geojson"):
-                logging.debug("%s is not a geojson file, skipping")
-                continue
+        props = data['properties']
+        placetype = props.get('wof:placetype', None)
 
-            logging.debug("processing %s" % f)
+        if not placetype:
+            logging.warning("%s is missing an wof:placetype property" % path)
+            continue
 
-            try:
-                fh = open(f, 'r')
-                data = geojson.load(fh)
-            except Exception, e:
-                logging.error("failed to process %s, because %s" % (f, e))
-                continue
+        if placetype != options.place:
+            logging.debug("%s is a %s, so skipping" % (path, placetype))
+            continue
 
-            props = data['properties']
-            placetype = props.get('wof:placetype', None)
+        out = defaults
 
-            if not placetype:
-                logging.warning("%s is missing an wof:placetype property" % f)
-                continue
+        wofid = props.get('wof:id', 0)
 
-            if placetype != options.place:
-                logging.debug("%s is a %s, so skipping" % (f, placetype))
-                continue
-
-            out = defaults
-
-            wofid = props.get('wof:id', 0)
-
-            if wofid == 0:
-                logging.warning("%s is missing an wof:id property, using filename" % f)
-                fname = os.path.basename(f)
-                wofid = fname.replace(".geojson", "")
-
-            out['id'] = wofid
-
-            out['parent_id'] = props.get('wof:parent_id', 0)
-
-            name = props.get('wof:name', None)
-
-            if not name:
-                name = props.get('name', None)
-
-            if not name:
-                name = ""
-
-            name = name.encode('utf8')
-            out['name'] = name
-
-            source = props.get("wof:source", None)
+        if wofid == 0:
+            logging.warning("%s is missing an wof:id property, using filename" % path)
+            fname = os.path.basename(path)
+            wofid = fname.replace(".geojson", "")
             
-            if not source:
-                source = props.get("wof:datasource", None)
+        out['id'] = wofid
 
-            if not source:
-                logging.warning("%s is missing a wof:source property" % f)
-                source = ""
-
-            out['source'] = source
-
-            if not options.abspath:
-                f = f.replace(options.source, "")
-                f = f.lstrip("/")
+        out['parent_id'] = props.get('wof:parent_id', 0)
+        
+        name = props.get('wof:name', None)
+        
+        if not name:
+            name = props.get('name', None)
             
-            out['path'] = f
+        if not name:
+            name = ""
+            
+        name = name.encode('utf8')
+        out['name'] = name
 
-            bbox = data.get('bbox', None)
+        source = None
 
-            if bbox:
-                bbox = map(str, bbox)
-                bbox = ",".join(bbox)
-                out['bbox'] = bbox
+        for k in ('src:geom', 'wof:source', 'wof:datasource'):
 
-            """
-            concordances = props.get('wof:concordances', {})
-            out['geonames_id'] = concordances.get('gn:id', 0)
-            out['gp_id'] = concordances.get('gp:id', 0)
-            """
+            if props.get(k):
+                source = props[k]
+                break
 
-            supersedes = props.get('wof:supersedes', [])
-            superseded_by = props.get('wof:superseded_by', [])
-            out['supersedes'] = ",".join(map(str, supersedes))
-            out['superseded_by'] = ",".join(map(str, superseded_by))
+        if not source:
+            logging.warning("%s is missing a wof:source property" % path)
+            source = ""
 
-            out['iso'] = props.get('iso:country', '')
-            out['lastmodified'] = props.get('wof:lastmodified', 0)
-            out['geomhash'] = props.get('wof:geomhash', '')
+        out['source'] = source
+        
+        if not options.abspath:
+            path = path.replace(options.source, "")
+            path = path.lstrip("/")
+            
+        out['path'] = path
 
-            writer.writerow(out)
+        bbox = data.get('bbox', None)
+        
+        if bbox:
+            bbox = map(str, bbox)
+            bbox = ",".join(bbox)
+            out['bbox'] = bbox
+
+        supersedes = props.get('wof:supersedes', [])
+        superseded_by = props.get('wof:superseded_by', [])
+        out['supersedes'] = ",".join(map(str, supersedes))
+        out['superseded_by'] = ",".join(map(str, superseded_by))
+        
+        out['iso'] = props.get('iso:country', '')
+        out['lastmodified'] = props.get('wof:lastmodified', 0)
+        out['geomhash'] = props.get('wof:geomhash', '')
+        
+        writer.writerow(out)

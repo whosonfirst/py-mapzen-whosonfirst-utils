@@ -10,6 +10,9 @@ import os.path
 import logging
 import re
 
+# these names are kind of stupid...
+# (20150720/thisisaaronland)
+
 def load(root, id, **kwargs):
 
     path = id2abspath(root, id, **kwargs)
@@ -104,6 +107,9 @@ def crawl(source, **kwargs):
             ret = path
 
             if not path.endswith('geojson'):
+                continue
+
+            if path.endswith('-alt.geojson'):
                 continue
 
             if validate or inflate or len(skip) or len(ensure):
