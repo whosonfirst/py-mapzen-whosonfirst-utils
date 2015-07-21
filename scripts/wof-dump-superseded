@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
         # the exact key names remains TBD...
         # (20150720/thisisaaronland)
-        notes = props.get('wof:superseded_by_notes, '')
+        notes = props.get('wof:superseded_by_notes', '')
 
         out = {
             'id': id,
