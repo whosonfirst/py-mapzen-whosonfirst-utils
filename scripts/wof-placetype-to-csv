@@ -6,6 +6,8 @@ import os.path
 import csv
 import pprint
 import geojson
+import time
+import shutil
 
 import mapzen.whosonfirst.utils
 
@@ -14,10 +16,12 @@ if __name__ == '__main__':
     import optparse
     opt_parser = optparse.OptionParser()
 
-    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
-    opt_parser.add_option('-p', '--placetype', dest='place', action='store', default=None, help='')
-    opt_parser.add_option('-a', '--abspath', dest='abspath', action='store_true', default=False, help='Write absolute paths')
-    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Where to write concordances (default is STDOUT)')
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Directory to read files from')
+    opt_parser.add_option('-p', '--placetype', dest='placetype', action='store', default=None, help='')
+    # please write me... (20150722/thisisaaronland)
+    # opt_parser.add_option('-i', '--iso', dest='iso', action='store', default=None, help='')
+    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
+    opt_parser.add_option('-l', '--latest', dest='latest', action='store_true', default=False, help='Copy <PLACETYPE>-<YMD>.csv to <PLACETYPE>-latest.csv (default is False)')
 
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     options, args = opt_parser.parse_args()
@@ -27,20 +31,33 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
-    if not options.place:
+    if not options.placetype:
         logging.error("Missing place type")
         sys.exit(1)
 
     # sanity check place type here
 
-    source = os.path.abspath(options.source)
-    crawl = mapzen.whosonfirst.utils.crawl(source)
-
-    fh = sys.stdout
+    outfh = sys.stdout
+    outpath = None
 
     if options.csv:
-        path = os.path.abspath(options.csv)
-        fh = open(path, 'w')
+
+        root = os.path.abspath(options.csv)
+
+        if not os.path.exists(root):
+            logging.error("%s does not exist" % root)
+            sys.exit()
+
+        now = time.gmtime()
+        ymd = time.strftime("%Y%m%d", now)
+
+        fname = "wof-%s-%s.csv" % (options.placetype, ymd)
+        outpath = os.path.join(root, fname)
+
+        outfh = open(outpath, 'w')
+
+    source = os.path.abspath(options.source)
+    crawl = mapzen.whosonfirst.utils.crawl(source)
 
     defaults = {
         'id': 0,
@@ -59,7 +76,7 @@ if __name__ == '__main__':
     fn = defaults.keys()
     fn.sort()
 
-    writer = csv.DictWriter(fh, fieldnames=fn)
+    writer = csv.DictWriter(outfh, fieldnames=fn)
     writer.writeheader()
 
     for path in crawl:
@@ -80,7 +97,7 @@ if __name__ == '__main__':
             logging.warning("%s is missing an wof:placetype property" % path)
             continue
 
-        if placetype != options.place:
+        if placetype != options.placetype:
             logging.debug("%s is a %s, so skipping" % (path, placetype))
             continue
 
@@ -122,9 +139,8 @@ if __name__ == '__main__':
 
         out['source'] = source
         
-        if not options.abspath:
-            path = path.replace(options.source, "")
-            path = path.lstrip("/")
+        path = path.replace(options.source, "")
+        path = path.lstrip("/")
             
         out['path'] = path
 
@@ -145,3 +161,16 @@ if __name__ == '__main__':
         out['geomhash'] = props.get('wof:geomhash', '')
         
         writer.writerow(out)
+
+    outfh.close()
+
+    if options.latest:
+
+        root = os.path.abspath(options.csv)
+        fname = "wof-%s-latest.csv" % options.placetype
+        latest_path = os.path.join(root, fname)
+
+        logging.info("copy %s to %s" % (outpath, latest_path))
+        shutil.copy(outpath, latest_path)
+
+    sys.exit()
