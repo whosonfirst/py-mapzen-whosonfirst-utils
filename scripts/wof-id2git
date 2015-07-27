@@ -7,10 +7,10 @@ import mapzen.whosonfirst.utils
 if __name__ == '__main__':
 
     import optparse
-    opt_parser = optparse.OptionParser()
+    opt_parser = optparse.OptionParser("wof-id2git <options> id")
 
-    opt_parser.add_option('-r', '--repo', dest='repo', action='store', default='https://github.com/mapzen/whosonfirst-data/', help='')
-    opt_parser.add_option('-b', '--branch', dest='branch', action='store', default='master', help='')
+    opt_parser.add_option('-r', '--repo', dest='repo', action='store', default='https://github.com/mapzen/whosonfirst-data/', help='The Git repo to references (default is https://github.com/mapzen/whosonfirst-data)')
+    opt_parser.add_option('-b', '--branch', dest='branch', action='store', default='master', help='The Git branch to reference (default is master)')
 
     options, args = opt_parser.parse_args()
 
