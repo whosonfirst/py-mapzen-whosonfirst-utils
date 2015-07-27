@@ -31,6 +31,7 @@ setup(
         'scripts/wof-inventory-properties',
         'scripts/wof-placetype-to-csv',
         'scripts/wof-promote-geometry',
+        'scripts/wof-properties',
         'scripts/wof-csv-to-feature-collection',
         'scripts/wof-csv-to-s3',
         'scripts/wof-supersede',

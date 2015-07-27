@@ -4,6 +4,8 @@ import sys
 import os
 import logging
 import csv
+import time
+import shutil
 
 import mapzen.whosonfirst.utils
 
@@ -12,8 +14,9 @@ if __name__ == '__main__':
     import optparse
     opt_parser = optparse.OptionParser()
     
-    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
-    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Where to write concordances (default is STDOUT)')
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Directory to read files from')
+    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
+    opt_parser.add_option('-l', '--latest', dest='latest', action='store_true', default=False, help='Copy <PLACETYPE>-<YMD>.csv to <PLACETYPE>-latest.csv (default is False)')
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     
     options, args = opt_parser.parse_args()
@@ -22,14 +25,28 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-        
-    source = os.path.abspath(options.source)
-    crawl = mapzen.whosonfirst.utils.crawl(source, inflate=True)
-        
+                
     out_fh = sys.stdout
+    out_path = None
 
     if options.csv:
-        out_fh = open(options.csv, 'w')
+
+        root = os.path.abspath(options.csv)
+
+        if not os.path.exists(root):
+            logging.error("%s does not exist" % root)
+            sys.exit()
+
+        now = time.gmtime()
+        ymd = time.strftime("%Y%m%d", now)
+
+        fname = "wof-superseded-%s.csv" % ymd
+
+        out_path = os.path.join(root, fname)
+        out_fh = open(out_path, 'w')
+
+    source = os.path.abspath(options.source)
+    crawl = mapzen.whosonfirst.utils.crawl(source, inflate=True)
 
     writer = None
 
@@ -64,3 +81,14 @@ if __name__ == '__main__':
             writer.writeheader()
 
         writer.writerow(out)
+
+    out_fh.close()
+
+    if options.latest:
+
+        root = os.path.abspath(options.csv)
+        fname = "wof-superseded-latest.csv"
+        latest_path = os.path.join(root, fname)
+
+        logging.info("copy %s to %s" % (out_path, latest_path))
+        shutil.copy(out_path, latest_path)
