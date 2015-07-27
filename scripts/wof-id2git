@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+# -*- python -*-
+
+import sys
+import mapzen.whosonfirst.utils
+
+if __name__ == '__main__':
+
+    import optparse
+    opt_parser = optparse.OptionParser()
+
+    opt_parser.add_option('-r', '--repo', dest='repo', action='store', default='https://github.com/mapzen/whosonfirst-data/', help='')
+    opt_parser.add_option('-b', '--branch', dest='branch', action='store', default='master', help='')
+
+    options, args = opt_parser.parse_args()
+
+    for id in args:
+
+        path = mapzen.whosonfirst.utils.id2relpath(id)
+        url = "%sblob/%s/data/%s" % (options.repo, options.branch, path)
+
+        print url
+
+    sys.exit()
