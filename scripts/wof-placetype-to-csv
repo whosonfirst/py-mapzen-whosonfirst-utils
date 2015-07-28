@@ -134,7 +134,7 @@ if __name__ == '__main__':
                 break
 
         if not source:
-            logging.warning("%s is missing a wof:source property" % path)
+            logging.warning("%s is missing a source property" % path)
             source = ""
 
         out['source'] = source
