@@ -52,11 +52,13 @@ if __name__ == '__main__':
                 'wof:parent_id': types.IntType,
                 'wof:name': types.UnicodeType,
                 'wof:placetype': types.UnicodeType,
+                'iso:country': types.UnicodeType,
                 'wof:concordances': types.DictType,
                 'wof:hierarchy': types.ListType,
                 'wof:belongsto': types.ListType,
                 'wof:supersedes': types.ListType,
                 'wof:superseded_by': types.ListType,
+                'wof:breaches': types.ListType,
                 # 'geom:area': types.FloatType,
                 # 'geom:latitude': types.FloatType,
                 # 'geom:longitude': types.FloatType,
@@ -77,6 +79,11 @@ if __name__ == '__main__':
                 if k == 'wof:parent_id':
                     logging.info("assigning parent_id as -1")
                     props['wof:parent_id'] = -1
+                    updated = True
+
+                elif k == 'iso:country':
+                    logging.info("assigning empty iso:country")
+                    props['iso:country'] = ""
                     updated = True
 
                 elif k == 'wof:concordances':
@@ -145,6 +152,12 @@ if __name__ == '__main__':
                     else:
                         pass
 
+                elif k == 'iso:country':
+
+                    if isa == types.StringType:
+                        props['iso:country'] = unicode(v)
+                        updated = True
+
                 elif k == 'wof:name':
                     props['wof:name'] = u""
                     updated = True
@@ -176,7 +189,34 @@ if __name__ == '__main__':
             if parent_id == -1:
                 
                 if count_hiers == 1:
-                    logging.warning("%s has no parent but a single hierarchy so figure it out" % path)
+
+                    # logging.warning("%s has no parent but a single hierarchy so figure it out" % path)
+
+                    placetype = props['wof:placetype']
+                    print "update for %s" % placetype
+                    placetype = mapzen.whosonfirst.placetypes.placetype(placetype)
+                      
+                    parent_id = None
+                      
+                    # sudo make me recurse up through ancestors?
+
+                    for pt in placetype.parents():
+                      
+                      	parent_id_key = "%s_id" % pt
+                        parent_id = hier[0].get(parent_id_key, None)
+
+                        if parent_id:
+                            break
+
+                    if parent_id:
+                        logging.info("%s has -1 parent id and setting to %s" % (path, parent_id))
+                        props['wof:parent_id'] = parent_id
+                        updated = True
+
+            elif parent_id == 1:
+                logging.info("%s has parent ID of 1, so fixing..." % path)
+                props['wof:parent_id'] = 1
+                updated = True
 
             # check wof:name
 
@@ -184,3 +224,16 @@ if __name__ == '__main__':
 
             if len(name) == 0:
                 logging.warning("%s has a zero-length name" % path)
+
+            # check ISO country
+
+            iso = props.get("iso:country", "")
+
+            if len(iso) != 2:
+                logging.warning("%s has a weird ISO" % path)
+                
+            """
+            if updated and options.update:
+                feature['properties'] = props
+                exporter.export_feature(feature)
+            """
