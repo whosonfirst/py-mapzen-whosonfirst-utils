@@ -18,6 +18,8 @@ if __name__ == '__main__':
     opt_parser = optparse.OptionParser("""wof-validate --options /path/to/wof-data""")
 
     opt_parser.add_option('--update', dest='update', action='store_true', default=False, help='Try to fix errant values (default is False)')
+    opt_parser.add_option('--derive', dest='derive', action='store_true', default=False, help='Try to derive missing values (default is False)')
+
     opt_parser.add_option('--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
 
     options, args = opt_parser.parse_args()
@@ -30,9 +32,9 @@ if __name__ == '__main__':
     for source in args:
 
         source = os.path.abspath(source)
-        crawl = mapzen.whosonfirst.utils.crawl(source)
 
         exporter = mapzen.whosonfirst.export.flatfile(source)
+        crawl = mapzen.whosonfirst.utils.crawl(source)
 
         for path in crawl:
 
@@ -52,6 +54,7 @@ if __name__ == '__main__':
                 'wof:placetype': types.UnicodeType,
                 'wof:concordances': types.DictType,
                 'wof:hierarchy': types.ListType,
+                'wof:belongsto': types.ListType,
                 # 'geom:area': types.FloatType,
                 # 'geom:latitude': types.FloatType,
                 # 'geom:longitude': types.FloatType,
@@ -81,6 +84,10 @@ if __name__ == '__main__':
 
                 elif k == 'wof:hierarchy':
                     props['wof:hierarchy'] = [] 
+                    updated = True
+
+                elif k == 'wof:belongsto':
+                    props['wof:belongsto'] = [] 
                     updated = True
 
                 else:
@@ -143,17 +150,31 @@ if __name__ == '__main__':
 
                 logging.warning("%s has incorrect value for %s, expected %s but got %s, and I don't know what to do about it" % (path, k, expected, isa))        
 
-        if not options.update:
+        if not options.derive:
             continue
 
         # try to derive values from existing data or services
 
-        hier = props['wof:hierarchy']
+        updated = False
 
-        if len(hier) == 0:
+        hier = props.get('wof:hierarchy', [])
+        count_hiers = len(hier)
+
+        if count_hiers == 0:
             logging.warning("%s has a zero length hierarchy" % path)
 
         # check parent_id
 
+        parent_id = props.get('wof:parent_id', -1)
+
+        if parent_id == -1:
+
+            if count_hiers == 1:
+                logging.warning("%s has no parent but a single hierarchy so figure it out" % path)
+
         # check wof:name
-            
+
+        name = props.get("wof:name", "")
+
+        if len(name) == 0:
+            logging.warning("% has a zero-length name" % path)
