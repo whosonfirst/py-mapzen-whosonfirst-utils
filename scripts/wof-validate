@@ -48,9 +48,13 @@ if __name__ == '__main__':
             required = {
                 'wof:id': types.IntType,
                 'wof:parent_id': types.IntType,
+                'wof:name': types.UnicodeType,
                 'wof:placetype': types.UnicodeType,
                 'wof:concordances': types.DictType,
                 'wof:hierarchy': types.ListType,
+                # 'geom:area': types.FloatType,
+                # 'geom:latitude': types.FloatType,
+                # 'geom:longitude': types.FloatType,
             }
             
             # ensure keys
@@ -125,6 +129,10 @@ if __name__ == '__main__':
                     else:
                         pass
 
+                elif k == 'wof:name':
+                    props['wof:name'] = u""
+                    updated = True
+
                 else:
                     pass
                 
@@ -135,3 +143,17 @@ if __name__ == '__main__':
 
                 logging.warning("%s has incorrect value for %s, expected %s but got %s, and I don't know what to do about it" % (path, k, expected, isa))        
 
+        if not options.update:
+            continue
+
+        # try to derive values from existing data or services
+
+        hier = props['wof:hierarchy']
+
+        if len(hier) == 0:
+            logging.warning("%s has a zero length hierarchy" % path)
+
+        # check parent_id
+
+        # check wof:name
+            
