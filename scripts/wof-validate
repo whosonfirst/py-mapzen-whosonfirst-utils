@@ -55,6 +55,8 @@ if __name__ == '__main__':
                 'wof:concordances': types.DictType,
                 'wof:hierarchy': types.ListType,
                 'wof:belongsto': types.ListType,
+                'wof:supersedes': types.ListType,
+                'wof:superseded_by': types.ListType,
                 # 'geom:area': types.FloatType,
                 # 'geom:latitude': types.FloatType,
                 # 'geom:longitude': types.FloatType,
@@ -68,37 +70,46 @@ if __name__ == '__main__':
                     logging.debug("%s has key (%s)" % (path, k))
                     continue
 
-                if not options.update:
-                    logging.warning("%s is missing key %s" % (path, k))
-                    continue
+                logging.warning("%s is missing key %s" % (path, k))
 
                 updated = False
 
                 if k == 'wof:parent_id':
-                    props['wof:parent_id'] = 1
+                    logging.info("assigning parent_id as -1")
+                    props['wof:parent_id'] = -1
                     updated = True
 
                 elif k == 'wof:concordances':
+                    logging.info("assigning empty concordances")
                     props['wof:concordances'] = {}
                     updated = True
 
                 elif k == 'wof:hierarchy':
+                    logging.info("assigning empty hierarchy")
                     props['wof:hierarchy'] = [] 
                     updated = True
 
                 elif k == 'wof:belongsto':
+                    logging.info("assigning empty belongsto")
                     props['wof:belongsto'] = [] 
+                    updated = True
+
+                elif k == 'wof:supersedes':
+                    logging.info("assigning empty supersedes")
+                    props['wof:supersedes'] = [] 
+                    updated = True
+
+                elif k == 'wof:superseded_by':
+                    logging.info("assigning empty superseded_by")
+                    props['wof:superseded_by'] = [] 
                     updated = True
 
                 else:
                     pass
 
-                if updated:
+                if updated and options.update:
                     feature['properties'] = props
                     exporter.export_feature(feature)
-                    continue
-
-                logging.warning("%s is missing key %s and I don't know what to do about it" % (path, k))
 
             # ensure expected types (for values)
 
@@ -111,9 +122,7 @@ if __name__ == '__main__':
                     logging.debug("%s has key (%s) with expected value (%s)" % (path, k, isa))
                     continue
 
-                if not options.update:
-                    logging.warning("%s has incorrect value for %s, expected %s but got %s" % (path, k, expected, isa))
-                    continue
+                logging.warning("%s has incorrect value for %s, expected %s but got %s" % (path, k, expected, isa))
 
                 updated = False
 
@@ -143,38 +152,35 @@ if __name__ == '__main__':
                 else:
                     pass
                 
-                if updated:
+                if updated and options.update:
                     feature['properties'] = props
                     exporter.export_feature(feature)
-                    continue
+            
+            if not options.derive:
+                continue
 
-                logging.warning("%s has incorrect value for %s, expected %s but got %s, and I don't know what to do about it" % (path, k, expected, isa))        
+            # try to derive values from existing data or services
+        
+            updated = False
 
-        if not options.derive:
-            continue
+            hier = props.get('wof:hierarchy', [])
+            count_hiers = len(hier)
+            
+            if count_hiers == 0:
+                logging.warning("%s has a zero length hierarchy" % path)
 
-        # try to derive values from existing data or services
+            # check parent_id
 
-        updated = False
+            parent_id = props.get('wof:parent_id', -1)
+            
+            if parent_id == -1:
+                
+                if count_hiers == 1:
+                    logging.warning("%s has no parent but a single hierarchy so figure it out" % path)
 
-        hier = props.get('wof:hierarchy', [])
-        count_hiers = len(hier)
+            # check wof:name
 
-        if count_hiers == 0:
-            logging.warning("%s has a zero length hierarchy" % path)
+            name = props.get("wof:name", "")
 
-        # check parent_id
-
-        parent_id = props.get('wof:parent_id', -1)
-
-        if parent_id == -1:
-
-            if count_hiers == 1:
-                logging.warning("%s has no parent but a single hierarchy so figure it out" % path)
-
-        # check wof:name
-
-        name = props.get("wof:name", "")
-
-        if len(name) == 0:
-            logging.warning("% has a zero-length name" % path)
+            if len(name) == 0:
+                logging.warning("%s has a zero-length name" % path)
