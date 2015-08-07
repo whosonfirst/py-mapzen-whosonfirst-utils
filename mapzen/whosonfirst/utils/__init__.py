@@ -10,6 +10,12 @@ import os.path
 import logging
 import re
 
+# this is only here for the generate_hierarchy stuff until we have
+# a stable endpoint of some kind (21050807/thisisaaronland)
+
+import urllib3
+urllib3.disable_warnings()
+
 # these names are kind of stupid...
 # (20150720/thisisaaronland)
 
@@ -91,6 +97,9 @@ def ensure_bbox(f):
         f['bbox'] = list(shp.bounds)
 
 def generate_hierarchy(f):
+
+    # sudo make me use py-mapzen-whosonfirst-spatial if possible
+    # (21050807/thisisaaronland)
 
         hier = []
 

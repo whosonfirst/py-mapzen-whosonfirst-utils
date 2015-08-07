@@ -2,18 +2,271 @@
 # -*-python-*-
 
 import sys
+import signal
 import os.path
 import logging
 import json
 import geojson
 import types
-
-import requests
-import shapely.geometry
+import multiprocessing
 
 import mapzen.whosonfirst.utils
 import mapzen.whosonfirst.export
 import mapzen.whosonfirst.placetypes
+
+def validate(args):
+
+    path, exporter, options = args
+
+    logging.debug("process %s" % path)
+
+    try:
+        fh = open(path, 'r')
+        feature = geojson.load(fh)
+    except Exception, e:
+        logging.error("failed to open %s because %s" % (path, e))
+        return False
+
+    props = feature['properties']
+
+    required = {
+        'wof:id': types.IntType,
+        'wof:parent_id': types.IntType,
+        'wof:name': types.UnicodeType,
+        'wof:placetype': types.UnicodeType,
+        'iso:country': types.UnicodeType,
+        'wof:concordances': types.DictType,
+        'wof:hierarchy': types.ListType,
+        'wof:belongsto': types.ListType,
+        'wof:supersedes': types.ListType,
+        'wof:superseded_by': types.ListType,
+        'wof:breaches': types.ListType,
+        # 'geom:area': types.FloatType,
+        # 'geom:latitude': types.FloatType,
+        # 'geom:longitude': types.FloatType,
+    }
+            
+    # ensure keys
+    
+    for k, ignore in required.items():
+
+        if props.has_key(k):
+            logging.debug("%s has key (%s)" % (path, k))
+            continue
+            
+        logging.warning("%s is missing key %s" % (path, k))
+
+        updated = False
+
+        if k == 'wof:parent_id':
+            logging.info("assigning parent_id as -1")
+            props['wof:parent_id'] = -1
+            updated = True
+            
+        elif k == 'iso:country':
+            logging.info("assigning empty iso:country")
+            props['iso:country'] = ""
+            updated = True
+            
+        elif k == 'wof:concordances':
+            logging.info("assigning empty concordances")
+            props['wof:concordances'] = {}
+            updated = True
+            
+        elif k == 'wof:hierarchy':
+            logging.info("assigning empty hierarchy")
+            props['wof:hierarchy'] = [] 
+            updated = True
+            
+        elif k == 'wof:belongsto':
+            logging.info("assigning empty belongsto")
+            props['wof:belongsto'] = [] 
+            updated = True
+            
+        elif k == 'wof:supersedes':
+            logging.info("assigning empty supersedes")
+            props['wof:supersedes'] = [] 
+            updated = True
+            
+        elif k == 'wof:superseded_by':
+            logging.info("assigning empty superseded_by")
+            props['wof:superseded_by'] = [] 
+            updated = True
+            
+        else:
+            pass
+            
+        if updated and options.update:
+            feature['properties'] = props
+            exporter.export_feature(feature)
+
+    # ensure expected types (for values)
+
+    for k, expected in required.items():
+        
+        v = props[k]
+        isa = type(v)
+        
+        if isa == expected:
+            logging.debug("%s has key (%s) with expected value (%s)" % (path, k, isa))
+            continue
+            
+        logging.warning("%s has incorrect value for %s, expected %s but got %s" % (path, k, expected, isa))
+
+        updated = False
+
+        if k == 'wof:hierarchy':
+            
+            if isa == types.DictType:
+                props['wof:hierarchy'] = [ v]
+                updated = True
+                
+        elif k == 'wof:parent_id':
+                
+            if isa == types.NoneType:
+                props['wof:parent_id'] = -1
+                updated = True
+                
+            elif isa == types.UnicodeType:
+                props['wof:parent_id'] = int(v)
+                updated = True
+                
+            else:
+                pass
+                    
+        elif k == 'iso:country':
+                    
+            if isa == types.StringType:
+                props['iso:country'] = unicode(v)
+                updated = True
+                
+            elif k == 'wof:name':
+                props['wof:name'] = u""
+                updated = True
+                
+            else:
+                pass
+
+        logging.warning("WHAT")
+
+        if updated and options.update:
+            feature['properties'] = props
+            exporter.export_feature(feature)
+            
+    if not options.derive:
+        return True
+
+    # try to derive values from existing data or services
+        
+    updated = False
+
+    hier = props.get('wof:hierarchy', [])
+    count_hiers = len(hier)
+
+    if count_hiers == 0:
+    
+        hier = mapzen.whosonfirst.utils.generate_hierarchy(feature)
+        count_hiers = len(hier)
+            
+        if count_hiers == 0:
+            logging.warning("%s has a zero length hierarchy but unable to figure it out" % path)
+        else:
+            logging.info("%s had a zero length hierarchy and now it doesn't" % path)
+            props['wof:hierarchy'] = hier
+            updated = True
+
+    # check parent_id
+
+    parent_id = props.get('wof:parent_id', -1)
+        
+    if parent_id == -1:
+            
+        if count_hiers == 1:
+                
+            placetype = props['wof:placetype']
+            placetype = mapzen.whosonfirst.placetypes.placetype(placetype)
+            
+            new_parent_id = None
+            
+            # sudo make me recurse up through ancestors?
+            
+            for pt in placetype.parents():
+                
+                parent_id_key = "%s_id" % pt
+                new_parent_id = hier[0].get(parent_id_key, None)
+                
+                if new_parent_id:
+                    break
+                
+            if new_parent_id and new_parent_id != -1:
+                logging.info("%s has -1 parent id and setting to %s" % (path, new_parent_id))
+                props['wof:parent_id'] = new_parent_id
+                updated = True
+            else:
+                logging.warning("%s has no parent and a single hierarchy but unable to figure it out..." % path)
+                
+        elif count_hiers:
+            logging.info("%s has multiple hiers so no easy way to determine parent" % path)
+        else:
+            pass
+
+    # check wof:name
+
+    name = props.get("wof:name", "")
+        
+    if len(name) == 0:
+        logging.debug("%s has a zero-length name" % path)
+            
+    # check ISO country
+
+    iso = props.get("iso:country", "")
+
+    if len(iso) != 2:
+        logging.debug("%s has a weird ISO" % path)
+
+    # concordances stuff
+        
+    concordances = props.get('wof:concordances', {})
+
+    # this does not appear to be a thing but leaving it here 
+    # for now for posterity (20150708/thisisaaronland)
+
+    """
+    if concordances.get('woe:id', False):
+            
+        woeid = concordances['woe:id']
+
+        if concordances.get('gp:id', False):
+
+            gpid = concordances['gp:id']
+                
+            if woeid == gpid:
+                logging.info("%s had a concordances mismatch between woe:id and gp:id (%s) and now it doesn't" % (path, woeid))
+
+                del(concordances['woe:id'])       
+                props['wof:concordances'] = concordances
+                updated = True
+                    
+            else:
+                logging.warning("%s has a concordances mismatch between woe:id (%s) and gp:id (%s)" % (path, woeid, gpid))
+
+        else:
+            logging.info("%s had a concordances mismatch between woe:id and gp:id (%s) and now it doesn't" % (path, woeid))
+            del(concordances['woe:id'])
+            concordances['gp:id'] = woeid
+            
+            props['wof:concordances'] = concordances
+            updated = True
+    """
+
+    # update the record?
+
+    if updated and options.update:
+        logging.info("%s has changes that will be written to disk" % path)
+        feature['properties'] = props
+        exporter.export_feature(feature)
+        
+    logging.debug("%s finished validating" % path)
 
 if __name__ == '__main__': 
 
@@ -24,6 +277,8 @@ if __name__ == '__main__':
     opt_parser.add_option('--update', dest='update', action='store_true', default=False, help='Try to fix errant values (default is False)')
     opt_parser.add_option('--derive', dest='derive', action='store_true', default=False, help='Try to derive missing values (default is False)')
 
+    opt_parser.add_option('--multi', dest='multi', action='store_true', default=False, help='Validate files with multiple processes (default is False)')
+
     opt_parser.add_option('--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
 
     options, args = opt_parser.parse_args()
@@ -33,6 +288,11 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
+    def signal_handler(signal, frame):
+        sys.exit(0)
+        
+    signal.signal(signal.SIGINT, signal_handler)
+
     for source in args:
 
         source = os.path.abspath(source)
@@ -40,253 +300,29 @@ if __name__ == '__main__':
         exporter = mapzen.whosonfirst.export.flatfile(source)
         crawl = mapzen.whosonfirst.utils.crawl(source)
 
-        for path in crawl:
+        if options.multi:
 
-            try:
-                fh = open(path, 'r')
-                feature = geojson.load(fh)
-            except Exception, e:
-                logging.error("failed to open %s because %s" % (path, e))
-                continue
-
-            props = feature['properties']
-
-            required = {
-                'wof:id': types.IntType,
-                'wof:parent_id': types.IntType,
-                'wof:name': types.UnicodeType,
-                'wof:placetype': types.UnicodeType,
-                'iso:country': types.UnicodeType,
-                'wof:concordances': types.DictType,
-                'wof:hierarchy': types.ListType,
-                'wof:belongsto': types.ListType,
-                'wof:supersedes': types.ListType,
-                'wof:superseded_by': types.ListType,
-                'wof:breaches': types.ListType,
-                # 'geom:area': types.FloatType,
-                # 'geom:latitude': types.FloatType,
-                # 'geom:longitude': types.FloatType,
-            }
+            processes = multiprocessing.cpu_count() * 2
+            pool = multiprocessing.Pool(processes=processes)
             
-            # ensure keys
-
-            for k, ignore in required.items():
-
-                if props.has_key(k):
-                    logging.debug("%s has key (%s)" % (path, k))
-                    continue
-
-                logging.warning("%s is missing key %s" % (path, k))
-
-                updated = False
-
-                if k == 'wof:parent_id':
-                    logging.info("assigning parent_id as -1")
-                    props['wof:parent_id'] = -1
-                    updated = True
-
-                elif k == 'iso:country':
-                    logging.info("assigning empty iso:country")
-                    props['iso:country'] = ""
-                    updated = True
-
-                elif k == 'wof:concordances':
-                    logging.info("assigning empty concordances")
-                    props['wof:concordances'] = {}
-                    updated = True
-
-                elif k == 'wof:hierarchy':
-                    logging.info("assigning empty hierarchy")
-                    props['wof:hierarchy'] = [] 
-                    updated = True
-
-                elif k == 'wof:belongsto':
-                    logging.info("assigning empty belongsto")
-                    props['wof:belongsto'] = [] 
-                    updated = True
-
-                elif k == 'wof:supersedes':
-                    logging.info("assigning empty supersedes")
-                    props['wof:supersedes'] = [] 
-                    updated = True
-
-                elif k == 'wof:superseded_by':
-                    logging.info("assigning empty superseded_by")
-                    props['wof:superseded_by'] = [] 
-                    updated = True
-
-                else:
-                    pass
-
-                if updated and options.update:
-                    feature['properties'] = props
-                    exporter.export_feature(feature)
-
-            # ensure expected types (for values)
-
-            for k, expected in required.items():
-
-                v = props[k]
-                isa = type(v)
-
-                if isa == expected:
-                    logging.debug("%s has key (%s) with expected value (%s)" % (path, k, isa))
-                    continue
-
-                logging.warning("%s has incorrect value for %s, expected %s but got %s" % (path, k, expected, isa))
-
-                updated = False
-
-                if k == 'wof:hierarchy':
-
-                    if isa == types.DictType:
-                        props['wof:hierarchy'] = [ v]
-                        updated = True
-
-                elif k == 'wof:parent_id':
-
-                    if isa == types.NoneType:
-                        props['wof:parent_id'] = -1
-                        updated = True
-
-                    elif isa == types.UnicodeType:
-                        props['wof:parent_id'] = int(v)
-                        updated = True
-
-                    else:
-                        pass
-
-                elif k == 'iso:country':
-
-                    if isa == types.StringType:
-                        props['iso:country'] = unicode(v)
-                        updated = True
-
-                elif k == 'wof:name':
-                    props['wof:name'] = u""
-                    updated = True
-
-                else:
-                    pass
-                
-                if updated and options.update:
-                    feature['properties'] = props
-                    exporter.export_feature(feature)
+            batch = []
+            batch_size = 10000
             
-            if not options.derive:
-                continue
+            for path in crawl:
 
-            # try to derive values from existing data or services
-        
-            updated = False
+                batch.append((path, exporter, options))
 
-            hier = props.get('wof:hierarchy', [])
-            count_hiers = len(hier)
-            
-            if count_hiers == 0:
-                logging.warning("%s has a zero length hierarchy" % path)
+                if len(batch) >= batch_size:
 
-                hier = mapzen.whosonfirst.utils.generate_hierarchy(feature)
-                count_hiers = len(hier)
-                
-                if count_hiers >= 1:
-                    print hier
-                    sys.exit()
+                    pool.map(validate, batch)
+                    batch = []
+                    
+                    break
 
-            # check parent_id
+            if len(batch):
+                pool.map(validate, batch)
 
-            parent_id = props.get('wof:parent_id', -1)
-            
-            if parent_id == -1:
-                
-                if count_hiers == 1:
+        else:
 
-                    placetype = props['wof:placetype']
-                    placetype = mapzen.whosonfirst.placetypes.placetype(placetype)
-                      
-                    new_parent_id = None
-                      
-                    # sudo make me recurse up through ancestors?
-
-                    for pt in placetype.parents():
-                      
-                      	parent_id_key = "%s_id" % pt
-                        new_parent_id = hier[0].get(parent_id_key, None)
-
-                        if new_parent_id:
-                            break
-
-                    if new_parent_id and new_parent_id != -1:
-                        logging.info("%s has -1 parent id and setting to %s" % (path, new_parent_id))
-                        props['wof:parent_id'] = new_parent_id
-                        updated = True
-                    else:
-                        logging.warning("%s has no parent and a single hierarchy but unable to figure it out..." % path)
-
-            else:
-                pass
-
-            """
-            if parent_id == -1:
-
-                lat = None
-                lon = None
-
-                if props.get('geom:latitude', False) and props.get('geom:longitude', False):
-                    lat = props['geom:latitude']
-                    lon = props['geom:longitude']
-                else:
-
-                    geom = feature['geometry']
-                    shp = shapely.geometry.asShape(geom)
-                    coords = shp.centroid
-                    lat = coords.y
-                    lon = coords.x
-
-                placetype = props['wof:placetype']
-                placetype = mapzen.whosonfirst.placetypes.placetype(placetype)
-
-                placetypes = []
-
-                for pt in placetype.parents():
-                    placetypes.append(str(pt))
-
-                placetypes = ",".join(placetypes)
-
-                try:
-                    params = {'latitude': lat, 'longitude': lon, 'placetype': placetypes}
-                    print params
-                    rsp = requests.get('https://54.148.56.3/', params=params, verify=False)
-                    rsp = json.loads(rsp.content)
-                except Exception, e:
-                    continue
-
-                print rsp
-                print "WHAT"
-                sys.exit()
-            """
-
-            # figure if/whether to do a fresh point-in-polygon lookup
-
-            # take this and move it in to utils
-            # https://github.com/mapzen/py-mapzen-whosonfirst-import/blob/master/mapzen/whosonfirst/importer/__init__.py
-
-            # check wof:name
-
-            name = props.get("wof:name", "")
-
-            if len(name) == 0:
-                logging.debug("%s has a zero-length name" % path)
-
-            # check ISO country
-
-            iso = props.get("iso:country", "")
-
-            if len(iso) != 2:
-                logging.debug("%s has a weird ISO" % path)
-                
-            # update the record?
-
-            if updated and options.update:
-                feature['properties'] = props
-                exporter.export_feature(feature)
+            for path in crawl:
+                validate((path, exporter, options))
