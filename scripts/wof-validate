@@ -4,8 +4,12 @@
 import sys
 import os.path
 import logging
+import json
 import geojson
 import types
+
+import requests
+import shapely.geometry
 
 import mapzen.whosonfirst.utils
 import mapzen.whosonfirst.export
@@ -182,6 +186,10 @@ if __name__ == '__main__':
             if count_hiers == 0:
                 logging.warning("%s has a zero length hierarchy" % path)
 
+                hier = mapzen.whosonfirst.utils.generate_hierarchy(feature)
+                print hier
+                sys.exit()
+
             # check parent_id
 
             parent_id = props.get('wof:parent_id', -1)
@@ -190,50 +198,92 @@ if __name__ == '__main__':
                 
                 if count_hiers == 1:
 
-                    # logging.warning("%s has no parent but a single hierarchy so figure it out" % path)
-
                     placetype = props['wof:placetype']
-                    print "update for %s" % placetype
                     placetype = mapzen.whosonfirst.placetypes.placetype(placetype)
                       
-                    parent_id = None
+                    new_parent_id = None
                       
                     # sudo make me recurse up through ancestors?
 
                     for pt in placetype.parents():
                       
                       	parent_id_key = "%s_id" % pt
-                        parent_id = hier[0].get(parent_id_key, None)
+                        new_parent_id = hier[0].get(parent_id_key, None)
 
-                        if parent_id:
+                        if new_parent_id:
                             break
 
-                    if parent_id:
-                        logging.info("%s has -1 parent id and setting to %s" % (path, parent_id))
-                        props['wof:parent_id'] = parent_id
+                    if new_parent_id and new_parent_id != -1:
+                        logging.info("%s has -1 parent id and setting to %s" % (path, new_parent_id))
+                        props['wof:parent_id'] = new_parent_id
                         updated = True
+                    else:
+                        logging.warning("%s has no parent and a single hierarchy but unable to figure it out..." % path)
 
-            elif parent_id == 1:
-                logging.info("%s has parent ID of 1, so fixing..." % path)
-                props['wof:parent_id'] = 1
-                updated = True
+            else:
+                pass
+
+            """
+            if parent_id == -1:
+
+                lat = None
+                lon = None
+
+                if props.get('geom:latitude', False) and props.get('geom:longitude', False):
+                    lat = props['geom:latitude']
+                    lon = props['geom:longitude']
+                else:
+
+                    geom = feature['geometry']
+                    shp = shapely.geometry.asShape(geom)
+                    coords = shp.centroid
+                    lat = coords.y
+                    lon = coords.x
+
+                placetype = props['wof:placetype']
+                placetype = mapzen.whosonfirst.placetypes.placetype(placetype)
+
+                placetypes = []
+
+                for pt in placetype.parents():
+                    placetypes.append(str(pt))
+
+                placetypes = ",".join(placetypes)
+
+                try:
+                    params = {'latitude': lat, 'longitude': lon, 'placetype': placetypes}
+                    print params
+                    rsp = requests.get('https://54.148.56.3/', params=params, verify=False)
+                    rsp = json.loads(rsp.content)
+                except Exception, e:
+                    continue
+
+                print rsp
+                print "WHAT"
+                sys.exit()
+            """
+
+            # figure if/whether to do a fresh point-in-polygon lookup
+
+            # take this and move it in to utils
+            # https://github.com/mapzen/py-mapzen-whosonfirst-import/blob/master/mapzen/whosonfirst/importer/__init__.py
 
             # check wof:name
 
             name = props.get("wof:name", "")
 
             if len(name) == 0:
-                logging.warning("%s has a zero-length name" % path)
+                logging.debug("%s has a zero-length name" % path)
 
             # check ISO country
 
             iso = props.get("iso:country", "")
 
             if len(iso) != 2:
-                logging.warning("%s has a weird ISO" % path)
+                logging.debug("%s has a weird ISO" % path)
                 
-            """
+            # update the record?
+
             if updated and options.update:
                 feature['properties'] = props
                 exporter.export_feature(feature)
-            """
