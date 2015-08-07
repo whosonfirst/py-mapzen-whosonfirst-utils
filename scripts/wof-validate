@@ -187,8 +187,11 @@ if __name__ == '__main__':
                 logging.warning("%s has a zero length hierarchy" % path)
 
                 hier = mapzen.whosonfirst.utils.generate_hierarchy(feature)
-                print hier
-                sys.exit()
+                count_hiers = len(hier)
+                
+                if count_hiers >= 1:
+                    print hier
+                    sys.exit()
 
             # check parent_id
 

@@ -96,7 +96,7 @@ def generate_hierarchy(f):
 
         props = f['properties']
 
-        geom = feature['geometry']
+        geom = f['geometry']
         shp = shapely.geometry.asShape(geom)
         coords = shp.centroid
 
