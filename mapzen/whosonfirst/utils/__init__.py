@@ -10,6 +10,12 @@ import os.path
 import logging
 import re
 
+# this is only here for the generate_hierarchy stuff until we have
+# a stable endpoint of some kind (21050807/thisisaaronland)
+
+import urllib3
+urllib3.disable_warnings()
+
 # these names are kind of stupid...
 # (20150720/thisisaaronland)
 
@@ -89,6 +95,55 @@ def ensure_bbox(f):
         geom = f['geometry']
         shp = shapely.geometry.asShape(geom)
         f['bbox'] = list(shp.bounds)
+
+def generate_hierarchy(f):
+
+    # sudo make me use py-mapzen-whosonfirst-spatial if possible
+    # (21050807/thisisaaronland)
+
+        hier = []
+
+        props = f['properties']
+
+        geom = f['geometry']
+        shp = shapely.geometry.asShape(geom)
+        coords = shp.centroid
+
+        lat = coords.y
+        lon = coords.x
+
+        # this assumes a copy of py-mapzen-whosonfirst-lookup with
+        # recursive get_by_latlon (20150728/thisisaaronland)
+
+        placetype = ('neighbourhood', 'locality', 'region', 'country', 'continent')
+        placetype = ",".join(placetype)
+
+        try:
+            params = {'latitude': lat, 'longitude': lon, 'placetype': placetype}
+            rsp = requests.get('https://54.148.56.3/', params=params, verify=False)
+                
+            data = json.loads(rsp.content)
+        except Exception, e:
+            logging.error(e)
+            return
+
+        if len(data['features']) == 1:
+            props['wof:parent_id'] = data['features'][0]['id']
+
+        if len(data['features']) >= 1:
+
+            for pf in data['features']:
+                pp = pf['properties']
+
+                if pp.get('wof:hierarchy', False):
+                    hier.extend(pp['wof:hierarchy'])
+
+        return hier
+
+        """
+        props['wof:hierarchy'] = hier
+        f['properties'] = props
+        """
 
 def crawl(source, **kwargs):
 
