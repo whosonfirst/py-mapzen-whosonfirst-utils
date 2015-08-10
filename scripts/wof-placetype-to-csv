@@ -10,6 +10,7 @@ import time
 import shutil
 
 import mapzen.whosonfirst.utils
+# import mapzen.whosonfirst.placetypes
 
 if __name__ == '__main__':
 
@@ -18,10 +19,11 @@ if __name__ == '__main__':
 
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Directory to read files from')
     opt_parser.add_option('-p', '--placetype', dest='placetype', action='store', default=None, help='')
-    # please write me... (20150722/thisisaaronland)
-    # opt_parser.add_option('-i', '--iso', dest='iso', action='store', default=None, help='')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
     opt_parser.add_option('-l', '--latest', dest='latest', action='store_true', default=False, help='Copy <PLACETYPE>-<YMD>.csv to <PLACETYPE>-latest.csv (default is False)')
+
+    # please write me... (20150722/thisisaaronland)
+    # opt_parser.add_option('-i', '--iso', dest='iso', action='store', default=None, help='')
 
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     options, args = opt_parser.parse_args()
@@ -61,8 +63,9 @@ if __name__ == '__main__':
 
     defaults = {
         'id': 0,
-        'parent_id': 0,
+        'parent_id': -1,
         'name': '',
+        'fullname': '',
         'source': '',
         'path' : '',
         'lastmodified': 0,
@@ -112,7 +115,7 @@ if __name__ == '__main__':
             
         out['id'] = wofid
 
-        out['parent_id'] = props.get('wof:parent_id', 0)
+        out['parent_id'] = props.get('wof:parent_id', -1)
         
         name = props.get('wof:name', None)
         
