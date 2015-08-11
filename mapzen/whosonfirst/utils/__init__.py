@@ -10,6 +10,8 @@ import os.path
 import logging
 import re
 
+import mapzen.whosonfirst.placetypes
+
 # this is only here for the generate_hierarchy stuff until we have
 # a stable endpoint of some kind (21050807/thisisaaronland)
 
@@ -101,49 +103,58 @@ def generate_hierarchy(f):
     # sudo make me use py-mapzen-whosonfirst-spatial if possible
     # (21050807/thisisaaronland)
 
-        hier = []
+    hier = []
 
-        props = f['properties']
+    props = f['properties']
 
+    # sudo make me use 'diplay:lat,lon' or 'routing:lat,lon' once we
+    # have them in the data... (20150810/thisisaaronland)
+
+    if props.get('geom:latitude', False) and props.get('geom:longitude', False):
+        lat = props['geom:latitude']
+        lon = props['geom:longitude']
+    else:
         geom = f['geometry']
         shp = shapely.geometry.asShape(geom)
         coords = shp.centroid
-
+    
         lat = coords.y
         lon = coords.x
 
-        # this assumes a copy of py-mapzen-whosonfirst-lookup with
-        # recursive get_by_latlon (20150728/thisisaaronland)
+    placetype = mapzen.whosonfirst.placetypes.placetype(props['wof:placetype'])
+    ancestors = placetype.ancestors()
 
-        placetype = ('neighbourhood', 'locality', 'region', 'country', 'continent')
-        placetype = ",".join(placetype)
+    str_ancestors = ",".join(ancestors)
 
-        try:
-            params = {'latitude': lat, 'longitude': lon, 'placetype': placetype}
-            rsp = requests.get('https://54.148.56.3/', params=params, verify=False)
+    try:
+        params = {'latitude': lat, 'longitude': lon, 'placetype': str_ancestors}
+        rsp = requests.get('https://54.148.56.3/', params=params, verify=False)
+        data = json.loads(rsp.content)
+    except Exception, e:
+        logging.error(e)
+        return []
+        
+    if len(data['features']) >= 1:
+
+        for pf in data['features']:
+
+            pp = pf['properties']
+            
+            for ph in pp.get('wof:hierarchy', []):
+
+                for a in ancestors:
+                    a_pid = "%s_id" % a
+
+                    if not ph.get(a_pid, False):
+                        ph[a_pid ] = -1
+
+                this_pid = "%s_id" % str(placetype)
+                this_id = props['wof:id']
+                ph[this_pid] = this_id
+
+                hier.append(ph)
                 
-            data = json.loads(rsp.content)
-        except Exception, e:
-            logging.error(e)
-            return
-
-        if len(data['features']) == 1:
-            props['wof:parent_id'] = data['features'][0]['id']
-
-        if len(data['features']) >= 1:
-
-            for pf in data['features']:
-                pp = pf['properties']
-
-                if pp.get('wof:hierarchy', False):
-                    hier.extend(pp['wof:hierarchy'])
-
-        return hier
-
-        """
-        props['wof:hierarchy'] = hier
-        f['properties'] = props
-        """
+    return hier
 
 def crawl(source, **kwargs):
 
