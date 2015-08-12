@@ -10,7 +10,7 @@ import time
 import shutil
 
 import mapzen.whosonfirst.utils
-# import mapzen.whosonfirst.placetypes
+import mapzen.whosonfirst.placetypes
 
 if __name__ == '__main__':
 
@@ -18,12 +18,10 @@ if __name__ == '__main__':
     opt_parser = optparse.OptionParser()
 
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Directory to read files from')
-    opt_parser.add_option('-p', '--placetype', dest='placetype', action='store', default=None, help='')
+    opt_parser.add_option('-p', '--placetypes', dest='placetypes', action='store', default=None, help='')
+    opt_parser.add_option('-r', '--roles', dest='roles', action='store', default=None, help='')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
     opt_parser.add_option('-l', '--latest', dest='latest', action='store_true', default=False, help='Copy <PLACETYPE>-<YMD>.csv to <PLACETYPE>-latest.csv (default is False)')
-
-    # please write me... (20150722/thisisaaronland)
-    # opt_parser.add_option('-i', '--iso', dest='iso', action='store', default=None, help='')
 
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     options, args = opt_parser.parse_args()
@@ -33,33 +31,7 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
-    if not options.placetype:
-        logging.error("Missing place type")
-        sys.exit(1)
-
-    # sanity check place type here
-
-    outfh = sys.stdout
-    outpath = None
-
-    if options.csv:
-
-        root = os.path.abspath(options.csv)
-
-        if not os.path.exists(root):
-            logging.error("%s does not exist" % root)
-            sys.exit()
-
-        now = time.gmtime()
-        ymd = time.strftime("%Y%m%d", now)
-
-        fname = "wof-%s-%s.csv" % (options.placetype, ymd)
-        outpath = os.path.join(root, fname)
-
-        outfh = open(outpath, 'w')
-
-    source = os.path.abspath(options.source)
-    crawl = mapzen.whosonfirst.utils.crawl(source)
+    #
 
     defaults = {
         'id': 0,
@@ -79,36 +51,103 @@ if __name__ == '__main__':
     fn = defaults.keys()
     fn.sort()
 
-    writer = csv.DictWriter(outfh, fieldnames=fn)
-    writer.writeheader()
+    #
+
+    placetypes = []
+
+    if options.placetypes:
+
+        for pt in options.placetypes.split(","):
+            pt = pt.strip()
+
+            if not mapzen.whosonfirst.placetypes.is_valid_placetype(pt):
+                logging.error("Invalid placetype (%s)" % pt)
+                sys.exit()
+
+        placetypes.append(pt)
+
+    elif options.roles:
+
+        roles = []
+
+        for rl in options.roles.split(","):
+
+            rl = rl.strip()
+
+            if not mapzen.whosonfirst.placetypes.is_valid_role(rl):
+                logging.error("Invalid role (%s)" % (rl))
+                sys.exit()
+
+            roles.append(rl)
+
+        placetypes = mapzen.whosonfirst.placetypes.with_roles(roles)        
+
+    else:
+
+        placetypes = mapzen.whosonfirst.placetypes.with_roles(('common', 'common_optional', 'optional'))
+
+    #
+
+    handles = {}
+    writers = {}
+    paths = {}
+
+    # first create file handles and paths for each placetype
+
+    for pt in placetypes:
+
+        if not options.csv:
+            handles[pt] = sys.stdout
+            paths[pt] = None
+            continue
+
+        root = os.path.abspath(options.csv)
+
+        now = time.gmtime()
+        ymd = time.strftime("%Y%m%d", now)
+
+        fname = "wof-%s-%s.csv" % (pt, ymd)
+
+        outpath = os.path.join(root, fname)
+        outfh = open(outpath, 'w')
+
+        handles[pt] = outfh
+        paths[pt] = outpath
+    
+    # now create a CSV writer for each placetype
+
+    for pt, fh in handles.items():
+
+        writer = csv.DictWriter(fh, fieldnames=fn)
+        writer.writeheader()
+        writers[pt] = writer
+
+    # start crawling...
+
+    source = os.path.abspath(options.source)
+    crawl = mapzen.whosonfirst.utils.crawl(source)
 
     for path in crawl:
 
-        logging.debug("checking %s" % path)
+        fh = open(path, 'r')
+        feature = geojson.load(fh)
 
-        try:
-            fh = open(path, 'r')
-            data = geojson.load(fh)
-        except Exception, e:
-            logging.error("failed to load %s, because %s" % (path, e))
-            continue
-
-        props = data['properties']
+        props = feature['properties']
         placetype = props.get('wof:placetype', None)
 
         if not placetype:
             logging.warning("%s is missing an wof:placetype property" % path)
             continue
 
-        if placetype != options.placetype:
+        if not writers.get(placetype, None):
             logging.debug("%s is a %s, so skipping" % (path, placetype))
             continue
 
         out = defaults
 
-        wofid = props.get('wof:id', 0)
+        wofid = props.get('wof:id', None)
 
-        if wofid == 0:
+        if wofid == None:
             logging.warning("%s is missing an wof:id property, using filename" % path)
             fname = os.path.basename(path)
             wofid = fname.replace(".geojson", "")
@@ -147,7 +186,7 @@ if __name__ == '__main__':
             
         out['path'] = path
 
-        bbox = data.get('bbox', None)
+        bbox = feature.get('bbox', None)
         
         if bbox:
             bbox = map(str, bbox)
@@ -163,17 +202,21 @@ if __name__ == '__main__':
         out['lastmodified'] = props.get('wof:lastmodified', 0)
         out['geomhash'] = props.get('wof:geomhash', '')
         
+        writer = writers[placetype]
         writer.writerow(out)
 
-    outfh.close()
+    for ignore, fh in handles.items():
+        fh.close()
 
     if options.latest:
 
-        root = os.path.abspath(options.csv)
-        fname = "wof-%s-latest.csv" % options.placetype
-        latest_path = os.path.join(root, fname)
+        for pt, path in paths.items():
 
-        logging.info("copy %s to %s" % (outpath, latest_path))
-        shutil.copy(outpath, latest_path)
+            root = os.path.abspath(options.csv)
+            fname = "wof-%s-latest.csv" % pt
+            latest_path = os.path.join(root, fname)
+
+            logging.info("copy %s to %s" % (path, latest_path))
+            shutil.copy(path, latest_path)
 
     sys.exit()
