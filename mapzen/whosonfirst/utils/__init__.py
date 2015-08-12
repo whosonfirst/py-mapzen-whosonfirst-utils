@@ -156,6 +156,37 @@ def generate_hierarchy(f):
                 
     return hier
 
+def crawl_with_callback(source, callback, **kwargs):
+
+    iter = crawl(source, **kwargs)
+
+    if kwargs.get('multiprocessing', False):
+
+        import multiprocessing
+
+        processes = multiprocessing.cpu_count() * 2
+        pool = multiprocessing.Pool(processes=processes)
+
+        batch = []
+        batch_size = kwargs.get('multiprocessing_batch_size', 1000)
+
+        for rsp in iter:
+
+            batch.append(rsp)
+
+            if len(batch) >= batch_size:
+
+                pool.map(callback, batch)
+                batch = []
+
+        if len(batch):
+            pool.map(callback, batch)
+
+    else:
+
+        for rsp in iter:
+            callback(rsp)
+    
 def crawl(source, **kwargs):
 
     validate = kwargs.get('validate', False)
