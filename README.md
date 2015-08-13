@@ -18,6 +18,59 @@ Depending on which version of rage-making Python or more likely the rage-making-
 sudo python ./setup.py install --install-scripts /usr/local/bin
 ```
 
+###On a Mac:
+
+In this order:
+
+1. Install prereqs `requests` and `urllib3`:
+```
+sudo pip install requests
+sudo pip install urllib3
+```
+
+Verify: 
+
+```
+python
+>>> import requests
+>>> import urllib3
+>>> exit()
+```
+
+2. Install prereq [https://github.com/mapzen/py-mapzen-whosonfirst-placetypes](py-mapzen-whosonfirst-placetypes), follow instructions over there.
+
+Verify WOF placetypes:
+
+```
+python
+>>> import mapzen.whosonfirst.placetypes
+>>> p = mapzen.whosonfirst.placetypes.placetype
+>>> p = mapzen.whosonfirst.placetypes.placetype("locality")
+>>> p.ancestors()
+['region', 'country', 'continent']
+>>> exit()
+```
+
+4. Install these utils:
+
+```
+sudo python ./setup.py install --install-scripts /usr/local/bin
+```
+
+5. Verify install worked:
+
+```
+python
+>>> import mapzen.whosonfirst.utils
+>>> crawl = mapzen.whosonfirst.utils.crawl('/Users/nvkelso/git-repos/whosonfirst-data', inflate=True)
+>>> for p in crawl:
+...     print p
+...     break
+... 
+{"bbox": [0.0, 0.0, 0.0, 0.0], "geometry": {"coordinates": [0.0, 0.0], "type": "Point"}, "properties": {"geom:area": 0.0, "geom:latitude": 0.0, "geom:longitude": 0.0, "iso:country": "", "wof:belongsto": [], "wof:breaches": [], "wof:concordances": {}, "wof:geomhash": "fc4d4085e55d16b479f231dbf54d3cfb", "wof:hierarchy": [{"planet_id": 0}], "wof:id": 0, "wof:lastmodified": 1438986803, "wof:name": "Earth", "wof:parent_id": -1, "wof:placetype": "planet", "wof:superseded_by": [], "wof:supersedes": []}, "type": "Feature"}
+>>> exit()
+```
+
 ## Usage
 
 _Please write me_
