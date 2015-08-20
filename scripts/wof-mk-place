@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+# -*-python-*-
+
+import sys
+import logging
+import geojson
+import os.path
+import pprint
+
+import mapzen.whosonfirst.utils
+import mapzen.whosonfirst.export
+import mapzen.whosonfirst.placetypes
+
+if __name__ == '__main__':
+
+    import optparse
+
+    opt_parser = optparse.OptionParser("""""")
+
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='')
+    opt_parser.add_option('-n', '--name', dest='name', action='store', default=None, help='')
+    opt_parser.add_option('-p', '--placetype', dest='placetype', action='store', default=None, help='')
+    opt_parser.add_option('-g', '--geom', dest='geom', action='store', default=None, help='')
+    opt_parser.add_option('-d', '--debug', dest='debug', action='store_true', default=False, help='')
+    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='')
+
+    options, args = opt_parser.parse_args()
+
+    if options.verbose:	
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    source = os.path.abspath(options.source)
+
+    if not os.path.exists(source):
+        logging.error("%s does not exist" % source)
+        sys.exit()
+
+    if not options.name:
+        logging.error("missing name")
+        sys.exit()
+
+    if not options.placetype:
+        logging.error("missing place type")
+        sys.exit()
+
+    try:
+        placetype = mapzen.whosonfirst.placetypes.placetype(options.placetype)
+    except Exception, e:
+        logging.error("%s is an invalid place type because %s" % (options.placetype, e))
+        sys.exit()
+
+    exporter = mapzen.whosonfirst.export.flatfile(source)
+
+    # sudo put me in a function yeah?
+    # (21050819/thisisaaronland)
+
+    if options.geom:
+        geom = geojson.loads(options.geom)
+    else:
+        geom = {
+            'type': 'Point',
+            'coordinates': [0, 0]
+        }
+
+    properties = {
+        # 'wof:id': 0,
+        'wof:parent_id': 0,
+        'wof:name': options.name,
+        'wof:placetype': str(placetype),
+        'wof:concordances': {},
+        'wof:hierarchy': [],
+        'wof:belongsto': [],
+        'wof:supersedes': [],
+        'wof:superseded_by': [],
+        'wof:breaches': [],
+        'iso:country': 'XY',
+    }
+
+    feature = {
+        'type': 'Feature',
+        'geometry': geom,
+        'properties': properties
+    }
+
+    # sudo return feature from a function yeah?
+    # (21050819/thisisaaronland)
+
+    if options.debug:
+        print pprint.pformat(feature)
+        sys.exit()
+
+    exporter.export_feature(feature)
+    sys.exit()

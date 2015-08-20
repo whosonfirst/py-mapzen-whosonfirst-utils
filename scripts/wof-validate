@@ -175,6 +175,9 @@ def validate(args):
             props['wof:hierarchy'] = hier
             updated = True
 
+    # TO DO - ensure that are the IDs are ints (and not strings)
+    # (20150819/thisisaaronland)
+
     # check parent_id
 
     parent_id = props.get('wof:parent_id', -1)
