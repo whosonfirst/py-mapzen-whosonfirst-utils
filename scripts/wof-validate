@@ -27,6 +27,22 @@ def validate(args):
         logging.error("failed to open %s because %s" % (path, e))
         return False
 
+    isa = feature.get('type', None)
+
+    # The absence of this will cause whatever GeoJSON parser things
+    # like GitHub and Mapshaper use to cry like a baby. On the other
+    # hand py-geojson will happily just work. Because everyone is
+    # doomed to reimplement XML Schema sooner or later...
+    # (20150831/thisisaaronland)
+
+    if isa != 'Feature':
+        logging.error("%s has an invalid type: %s" % (path, isa))
+
+        feature['type'] = 'Feature'
+
+        if options.update:
+            exporter.export_feature(feature)
+
     props = feature['properties']
 
     required = {
