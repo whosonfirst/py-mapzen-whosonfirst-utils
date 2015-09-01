@@ -163,7 +163,7 @@ def validate(args):
     hier = props.get('wof:hierarchy', [])
     count_hiers = len(hier)
 
-    if count_hiers == 0:
+    if 0 and count_hiers == 0:
     
         hier = mapzen.whosonfirst.utils.generate_hierarchy(feature)
         count_hiers = len(hier)
