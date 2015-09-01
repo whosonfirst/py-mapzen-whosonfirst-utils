@@ -43,7 +43,11 @@ if __name__ == '__main__':
         'lastmodified': 0,
         'iso': '',
         'bbox': '',
-        'geomhash': '',
+        'geom_hash': '',
+        'geom_latitude': 0,
+        'geom_longitude': 0,
+        'lbl_latitude': 0,
+        'lbl_longitude': 0,
         'supersedes': '',
         'superseded_by': '',
         }
@@ -129,8 +133,12 @@ if __name__ == '__main__':
 
     for path in crawl:
 
-        fh = open(path, 'r')
-        feature = geojson.load(fh)
+        try:
+            fh = open(path, 'r')
+            feature = geojson.load(fh)
+        except Exception, e:
+            logging.error("failed to load %s, because %s" % (path, e))
+            continue
 
         props = feature['properties']
         placetype = props.get('wof:placetype', None)
@@ -200,7 +208,13 @@ if __name__ == '__main__':
         
         out['iso'] = props.get('iso:country', '')
         out['lastmodified'] = props.get('wof:lastmodified', 0)
-        out['geomhash'] = props.get('wof:geomhash', '')
+        out['geom_hash'] = props.get('wof:geomhash', '')
+
+        out['geom_latitude'] = props.get('geom:latitude', 0)
+        out['geom_longitude'] = props.get('geom:longitude', 0)
+        out['lbl_latitude'] = props.get('lbl:latitude', 0)
+        out['lbl_longitude'] = props.get('lbl:longitude', 0)
+
         
         writer = writers[placetype]
         writer.writerow(out)

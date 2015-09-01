@@ -15,8 +15,14 @@ import mapzen.whosonfirst.placetypes
 # this is only here for the generate_hierarchy stuff until we have
 # a stable endpoint of some kind (21050807/thisisaaronland)
 
-import urllib3
-urllib3.disable_warnings()
+try:
+    import urllib3
+    urllib3.disable_warnings()
+
+    logging.error("Disabled urllib3 warning, because guh...")
+
+except Exception, e:
+    logging.error("Failed to disable urllib3 warning, because %s" % e)
 
 # these names are kind of stupid...
 # (20150720/thisisaaronland)

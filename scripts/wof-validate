@@ -27,6 +27,22 @@ def validate(args):
         logging.error("failed to open %s because %s" % (path, e))
         return False
 
+    isa = feature.get('type', None)
+
+    # The absence of this will cause whatever GeoJSON parser things
+    # like GitHub and Mapshaper use to cry like a baby. On the other
+    # hand py-geojson will happily just work. Because everyone is
+    # doomed to reimplement XML Schema sooner or later...
+    # (20150831/thisisaaronland)
+
+    if isa != 'Feature':
+        logging.error("%s has an invalid type: %s" % (path, isa))
+
+        feature['type'] = 'Feature'
+
+        if options.update:
+            exporter.export_feature(feature)
+
     props = feature['properties']
 
     required = {
@@ -41,6 +57,7 @@ def validate(args):
         'wof:supersedes': types.ListType,
         'wof:superseded_by': types.ListType,
         'wof:breaches': types.ListType,
+        'src:geom': types.UnicodeType,
         # 'geom:area': types.FloatType,
         # 'geom:latitude': types.FloatType,
         # 'geom:longitude': types.FloatType,
@@ -49,6 +66,8 @@ def validate(args):
     # ensure keys
     
     for k, ignore in required.items():
+
+        # logging.info("look for %s" % k)
 
         if props.has_key(k):
             logging.debug("%s has key (%s)" % (path, k))
@@ -104,7 +123,7 @@ def validate(args):
 
     for k, expected in required.items():
         
-        v = props[k]
+        v = props.get(k, None)
         isa = type(v)
         
         if isa == expected:
@@ -147,8 +166,6 @@ def validate(args):
             else:
                 pass
 
-        logging.warning("WHAT")
-
         if updated and options.update:
             feature['properties'] = props
             exporter.export_feature(feature)
@@ -174,6 +191,15 @@ def validate(args):
             logging.info("%s had a zero length hierarchy and now it doesn't" % path)
             props['wof:hierarchy'] = hier
             updated = True
+
+    if not props.get('src:geom', False) and props.get('geom:source', False):
+        logging.info("%s has missing 'src:geom' that can be derived by 'geom:source'" % path)
+        props['src:geom'] = props['geom:source']
+        del(props['geom:source'])
+        updated = True
+
+    # TO DO - ensure that are the IDs are ints (and not strings)
+    # (20150819/thisisaaronland)
 
     # check parent_id
 
@@ -224,41 +250,6 @@ def validate(args):
     if len(iso) != 2:
         logging.debug("%s has a weird ISO" % path)
 
-    # concordances stuff
-        
-    concordances = props.get('wof:concordances', {})
-
-    # this does not appear to be a thing but leaving it here 
-    # for now for posterity (20150708/thisisaaronland)
-
-    """
-    if concordances.get('woe:id', False):
-            
-        woeid = concordances['woe:id']
-
-        if concordances.get('gp:id', False):
-
-            gpid = concordances['gp:id']
-                
-            if woeid == gpid:
-                logging.info("%s had a concordances mismatch between woe:id and gp:id (%s) and now it doesn't" % (path, woeid))
-
-                del(concordances['woe:id'])       
-                props['wof:concordances'] = concordances
-                updated = True
-                    
-            else:
-                logging.warning("%s has a concordances mismatch between woe:id (%s) and gp:id (%s)" % (path, woeid, gpid))
-
-        else:
-            logging.info("%s had a concordances mismatch between woe:id and gp:id (%s) and now it doesn't" % (path, woeid))
-            del(concordances['woe:id'])
-            concordances['gp:id'] = woeid
-            
-            props['wof:concordances'] = concordances
-            updated = True
-    """
-
     # update the record?
 
     if updated and options.update:
@@ -278,6 +269,8 @@ if __name__ == '__main__':
     opt_parser.add_option('--derive', dest='derive', action='store_true', default=False, help='Try to derive missing values (default is False)')
 
     opt_parser.add_option('--multi', dest='multi', action='store_true', default=False, help='Validate files with multiple processes (default is False)')
+    opt_parser.add_option('--single', dest='single', action='store_true', default=False, help='Validate one or more individual files (default is False)')
+    opt_parser.add_option('--source', dest='source', action='store', default=None, help='Where to write updates to, required if --single (default is None)')
 
     opt_parser.add_option('--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
 
@@ -288,10 +281,20 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
-    def signal_handler(signal, frame):
-        sys.exit(0)
-        
-    signal.signal(signal.SIGINT, signal_handler)
+    if options.single:
+
+        source = os.path.abspath(options.source)
+
+        if not os.path.exists(source):
+            logging.error("%s does not exist" % source)
+
+        exporter = mapzen.whosonfirst.export.flatfile(source)
+
+        for path in args:
+            path = os.path.abspath(path)
+            validate((path, exporter, options))
+
+        sys.exit()
 
     for source in args:
 
@@ -301,6 +304,11 @@ if __name__ == '__main__':
         crawl = mapzen.whosonfirst.utils.crawl(source)
 
         if options.multi:
+
+            def signal_handler(signal, frame):
+                sys.exit(0)
+        
+            signal.signal(signal.SIGINT, signal_handler)
 
             processes = multiprocessing.cpu_count() * 2
             pool = multiprocessing.Pool(processes=processes)
