@@ -50,13 +50,15 @@ def validate(args):
         'wof:parent_id': types.IntType,
         'wof:name': types.UnicodeType,
         'wof:placetype': types.UnicodeType,
-        'iso:country': types.UnicodeType,
+        'wof:country': types.UnicodeType,
         'wof:concordances': types.DictType,
         'wof:hierarchy': types.ListType,
         'wof:belongsto': types.ListType,
         'wof:supersedes': types.ListType,
         'wof:superseded_by': types.ListType,
         'wof:breaches': types.ListType,
+        'wof:tags': types.ListType,
+        'iso:country': types.UnicodeType,
         'src:geom': types.UnicodeType,
         # 'geom:area': types.FloatType,
         # 'geom:latitude': types.FloatType,
@@ -86,6 +88,11 @@ def validate(args):
             logging.info("assigning empty iso:country")
             props['iso:country'] = ""
             updated = True
+
+        elif k == 'wof:country':
+            logging.info("assigning empty wof:country")
+            props['wof:country'] = ""
+            updated = True
             
         elif k == 'wof:concordances':
             logging.info("assigning empty concordances")
@@ -112,6 +119,11 @@ def validate(args):
             props['wof:superseded_by'] = [] 
             updated = True
             
+        elif k == 'wof:tags': 
+            logging.info("assigning empty tags")
+            props['wof:tags'] = [] 
+            updated = True
+
         else:
             pass
             
@@ -137,7 +149,7 @@ def validate(args):
         if k == 'wof:hierarchy':
             
             if isa == types.DictType:
-                props['wof:hierarchy'] = [ v]
+                props['wof:hierarchy'] = [v]
                 updated = True
                 
         elif k == 'wof:parent_id':
@@ -158,13 +170,18 @@ def validate(args):
             if isa == types.StringType:
                 props['iso:country'] = unicode(v)
                 updated = True
+        
+        else:
+            pass
+
+        """
+        elif k == 'wof:name':
+            props['wof:name'] = u""
+            updated = True
                 
-            elif k == 'wof:name':
-                props['wof:name'] = u""
-                updated = True
-                
-            else:
-                pass
+        else:
+            pass
+        """
 
         if updated and options.update:
             feature['properties'] = props
