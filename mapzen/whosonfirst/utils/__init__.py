@@ -169,6 +169,13 @@ def crawl_with_callback(source, callback, **kwargs):
     if kwargs.get('multiprocessing', False):
 
         import multiprocessing
+        import signal
+
+        def handler(signum, frame):
+            logging.warning("Received interupt handler, exiting")
+            sys.exit()
+
+        signal.signal(signal.SIGINT, handler)
 
         processes = multiprocessing.cpu_count() * 2
         pool = multiprocessing.Pool(processes=processes)
