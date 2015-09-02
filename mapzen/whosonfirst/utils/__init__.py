@@ -10,19 +10,11 @@ import os.path
 import logging
 import re
 
+import sys 
+import signal
+import multiprocessing
+
 import mapzen.whosonfirst.placetypes
-
-# this is only here for the generate_hierarchy stuff until we have
-# a stable endpoint of some kind (21050807/thisisaaronland)
-
-try:
-    import urllib3
-    urllib3.disable_warnings()
-
-    logging.error("Disabled urllib3 warning, because guh...")
-
-except Exception, e:
-    logging.error("Failed to disable urllib3 warning, because %s" % e)
 
 # these names are kind of stupid...
 # (20150720/thisisaaronland)
@@ -104,78 +96,17 @@ def ensure_bbox(f):
         shp = shapely.geometry.asShape(geom)
         f['bbox'] = list(shp.bounds)
 
-def generate_hierarchy(f):
-
-    # sudo make me use py-mapzen-whosonfirst-spatial if possible
-    # (21050807/thisisaaronland)
-
-    hier = []
-
-    props = f['properties']
-
-    # sudo make me use 'diplay:lat,lon' or 'routing:lat,lon' once we
-    # have them in the data... (20150810/thisisaaronland)
-
-    if props.get('geom:latitude', False) and props.get('geom:longitude', False):
-        lat = props['geom:latitude']
-        lon = props['geom:longitude']
-    else:
-        geom = f['geometry']
-        shp = shapely.geometry.asShape(geom)
-        coords = shp.centroid
-    
-        lat = coords.y
-        lon = coords.x
-
-    placetype = mapzen.whosonfirst.placetypes.placetype(props['wof:placetype'])
-    ancestors = placetype.ancestors()
-
-    str_ancestors = ",".join(ancestors)
-
-    try:
-        params = {'latitude': lat, 'longitude': lon, 'placetype': str_ancestors}
-        rsp = requests.get('https://54.148.56.3/', params=params, verify=False)
-        data = json.loads(rsp.content)
-    except Exception, e:
-        logging.error(e)
-        return []
-        
-    if len(data['features']) >= 1:
-
-        for pf in data['features']:
-
-            pp = pf['properties']
-            
-            for ph in pp.get('wof:hierarchy', []):
-
-                for a in ancestors:
-                    a_pid = "%s_id" % a
-
-                    if not ph.get(a_pid, False):
-                        ph[a_pid ] = -1
-
-                this_pid = "%s_id" % str(placetype)
-                this_id = props['wof:id']
-                ph[this_pid] = this_id
-
-                hier.append(ph)
-                
-    return hier
-
 def crawl_with_callback(source, callback, **kwargs):
 
     iter = crawl(source, **kwargs)
 
     if kwargs.get('multiprocessing', False):
 
-        import multiprocessing
-        import signal
-
-        def handler(signum, frame):
-            logging.warning("Received interupt handler, exiting")
+        def _handler(signum, frame):
+            logging.warning("Received interupt handler (in crawl_with_callback scope) so exiting")
             sys.exit()
 
-        signal.signal(signal.SIGINT, handler)
+        signal.signal(signal.SIGINT, _handler)
 
         processes = multiprocessing.cpu_count() * 2
         pool = multiprocessing.Pool(processes=processes)
@@ -185,20 +116,36 @@ def crawl_with_callback(source, callback, **kwargs):
 
         for rsp in iter:
 
-            batch.append(rsp)
+            batch.append((callback, rsp))
 
             if len(batch) >= batch_size:
 
-                pool.map(callback, batch)
+                pool.map(_callback_wrapper, batch)
                 batch = []
 
         if len(batch):
-            pool.map(callback, batch)
+            pool.map(_callback_wrapper, batch)
 
     else:
 
         for rsp in iter:
             callback(rsp)
+
+# Dunno - python seems all sad and whingey if this gets defined in
+# the (crawl_with_callback) scope above so whatever...
+# (20150902/thisisaaronland)
+
+def _callback_wrapper(args):
+
+    callback, feature = args
+
+    try:
+        callback(feature)
+    except KeyboardInterrupt:
+        logging.warning("Received interupt handler (in callback wrapper scope) so exiting")
+    except Exception, e:
+        logging.error("Failed to process feature because %s" % e)
+        raise Exception, e
     
 def crawl(source, **kwargs):
 
