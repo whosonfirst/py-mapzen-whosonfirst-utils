@@ -102,14 +102,15 @@ def crawl_with_callback(source, callback, **kwargs):
 
     if kwargs.get('multiprocessing', False):
 
-        def _handler(signum, frame):
-            logging.warning("Received interupt handler (in crawl_with_callback scope) so exiting")
-            sys.exit()
-
-        signal.signal(signal.SIGINT, _handler)
-
         processes = multiprocessing.cpu_count() * 2
         pool = multiprocessing.Pool(processes=processes)
+
+        def sigint_handler(signum, frame):
+            logging.warning("Received interupt handler (in crawl_with_callback scope) so exiting")
+            pool.terminate()
+            sys.exit()
+
+        signal.signal(signal.SIGINT, sigint_handler)
 
         batch = []
         batch_size = kwargs.get('multiprocessing_batch_size', 1000)
