@@ -190,7 +190,25 @@ def validate(args):
             if isa == types.StringType:
                 props['iso:country'] = unicode(v)
                 updated = True
+
+        elif k == 'wof:country':
+                    
+            if isa == types.StringType:
+                props['wof:country'] = unicode(v)
+                updated = True
         
+        elif k == 'edtf:inception':
+                    
+            if isa == types.StringType:
+                props['edtf:inception'] = unicode(v)
+                updated = True
+
+        elif k == 'edtf:cessation':
+                    
+            if isa == types.StringType:
+                props['edtf:cessation'] = unicode(v)
+                updated = True
+
         else:
             pass
 
