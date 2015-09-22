@@ -154,7 +154,7 @@ def validate(args):
             logging.debug("%s has key (%s) with expected value (%s)" % (path, k, isa))
             continue
             
-        logging.warning("%s has incorrect value for %s, expected %s but got %s" % (path, k, expected, isa))
+        logging.warning("%s has incorrect value for %s, expected %s but got %s (%s)" % (path, k, expected, isa, v))
 
         updated = False
 
@@ -176,7 +176,15 @@ def validate(args):
                 
             else:
                 pass
-                    
+            
+        elif k == 'src:geom':
+
+            if isa == types.NoneType:
+                props['src:geom'] = "unknown"
+                updated = True
+            else:
+                pass
+
         elif k == 'iso:country':
                     
             if isa == types.StringType:
