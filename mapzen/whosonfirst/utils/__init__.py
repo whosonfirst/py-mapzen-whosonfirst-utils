@@ -16,6 +16,28 @@ import multiprocessing
 
 import mapzen.whosonfirst.placetypes
 
+def is_valid_latitude(lat):
+    lat = float(lat)
+
+    if lat < -90.0:
+        return False
+
+    if lat > 90.0:
+        return False
+
+    return True
+
+def is_valid_longitude(lon):
+    lon = float(lon)
+
+    if lon < -180.0:
+        return False
+
+    if lon > 180.0:
+        return False
+
+    return True
+
 # these names are kind of stupid...
 # (20150720/thisisaaronland)
 
