@@ -60,6 +60,8 @@ def validate(args):
         'wof:tags': types.ListType,
         'iso:country': types.UnicodeType,
         'src:geom': types.UnicodeType,
+        'edtf:inception': types.UnicodeType,
+        'edtf:cessation': types.UnicodeType,
         # 'geom:area': types.FloatType,
         # 'geom:latitude': types.FloatType,
         # 'geom:longitude': types.FloatType,
@@ -122,6 +124,16 @@ def validate(args):
         elif k == 'wof:tags': 
             logging.info("assigning empty tags")
             props['wof:tags'] = [] 
+            updated = True
+
+        elif k == 'edtf:inception':
+            logging.info("assigning empty inception date")
+            props['edtf:inception'] = "u"
+            updated = True
+
+        elif k == 'edtf:cessation':
+            logging.info("assigning empty cessation date")
+            props['edtf:cessation'] = "u"
             updated = True
 
         else:
@@ -287,7 +299,6 @@ if __name__ == '__main__':
 
     opt_parser.add_option('--multi', dest='multi', action='store_true', default=False, help='Validate files with multiple processes (default is False)')
     opt_parser.add_option('--single', dest='single', action='store_true', default=False, help='Validate one or more individual files (default is False)')
-    opt_parser.add_option('--source', dest='source', action='store', default=None, help='Where to write updates to, required if --single (default is None)')
 
     opt_parser.add_option('--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
 
