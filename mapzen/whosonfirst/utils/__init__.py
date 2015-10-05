@@ -13,8 +13,18 @@ import re
 import sys 
 import signal
 import multiprocessing
+import hashlib
 
 import mapzen.whosonfirst.placetypes
+
+def hash_geom(f):
+
+    geom = f['geometry']
+    geom = json.dumps(geom)
+    
+    hash = hashlib.md5()
+    hash.update(geom)
+    return hash.hexdigest()
 
 def is_valid_latitude(lat):
     lat = float(lat)
