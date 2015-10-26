@@ -8,6 +8,7 @@ import pprint
 import geojson
 import time
 import shutil
+import hashlib
 
 import mapzen.whosonfirst.utils
 import mapzen.whosonfirst.placetypes
@@ -43,6 +44,7 @@ if __name__ == '__main__':
         'lastmodified': 0,
         'iso': '',
         'bbox': '',
+        'file_hash': '',
         'geom_hash': '',
         'geom_latitude': 0,
         'geom_longitude': 0,
@@ -153,6 +155,10 @@ if __name__ == '__main__':
 
         out = defaults
 
+        fh.seek(0)
+        hash = hashlib.md5(fh.read()).hexdigest()
+        out['file_hash'] = hash
+
         wofid = props.get('wof:id', None)
 
         if wofid == None:
@@ -215,7 +221,6 @@ if __name__ == '__main__':
         out['lbl_latitude'] = props.get('lbl:latitude', 0)
         out['lbl_longitude'] = props.get('lbl:longitude', 0)
 
-        
         writer = writers[placetype]
         writer.writerow(out)
 
