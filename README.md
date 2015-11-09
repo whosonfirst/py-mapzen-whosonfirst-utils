@@ -9,7 +9,7 @@ own.
 
 ## Installation
 
-The usual Python stuff
+The usual Python dance:
 
     sudo python setup.py install
     
