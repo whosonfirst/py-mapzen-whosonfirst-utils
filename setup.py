@@ -13,7 +13,7 @@ setup(
     author='Mapzen',
     url='https://github.com/mapzen/py-mapzen-whosonfirst-utils',
     install_requires=[
-        'mapzen.whosonfirst.placetypes>=0.04',
+        'mapzen.whosonfirst.placetypes>=0.07',
         'requests',
         'shapely',
         'geojson',
