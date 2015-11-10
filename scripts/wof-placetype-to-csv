@@ -13,6 +13,15 @@ import hashlib
 import mapzen.whosonfirst.utils
 import mapzen.whosonfirst.placetypes
 
+def hash_file(path):
+    fh = open(path, 'r')
+    return hash_filehandle(fh)
+
+def hash_filehandle(fh):
+    fh.seek(0)
+    hash = hashlib.md5(fh.read()).hexdigest()
+    return hash
+
 if __name__ == '__main__':
 
     import optparse
@@ -97,6 +106,7 @@ if __name__ == '__main__':
     handles = {}
     writers = {}
     paths = {}
+    preexisting = []
 
     # first create file handles and paths for each placetype
 
@@ -113,8 +123,15 @@ if __name__ == '__main__':
         ymd = time.strftime("%Y%m%d", now)
 
         fname = "wof-%s-%s.csv" % (pt, ymd)
-
         outpath = os.path.join(root, fname)
+
+        # Are we writing this file for the first time? This becomes
+        # relevant if/when we are trying to clean up '-latest' files
+        # below (20151110/thisisaaronland)
+
+        if os.path.exists(outpath):
+            preexisting.append(outpath)
+
         outfh = open(outpath, 'w')
 
         handles[pt] = outfh
@@ -155,8 +172,7 @@ if __name__ == '__main__':
 
         out = defaults
 
-        fh.seek(0)
-        hash = hashlib.md5(fh.read()).hexdigest()
+        hash = hash_filehandle(fh)
         out['file_hash'] = hash
 
         wofid = props.get('wof:id', None)
@@ -235,7 +251,35 @@ if __name__ == '__main__':
             fname = "wof-%s-latest.csv" % pt
             latest_path = os.path.join(root, fname)
 
-            logging.info("copy %s to %s" % (path, latest_path))
-            shutil.copy(path, latest_path)
+            is_new = True
+
+            # https://github.com/whosonfirst/py-mapzen-whosonfirst-utils/issues/3
+
+            if os.path.exists(latest_path):
+
+                ymd_hash = hash_file(path)
+                latest_hash = hash_file(latest_path)
+
+                if ymd_hash == latest_hash:
+                    logging.info("%s already exists and it is the same as %s" % (latest_path, path))
+                    is_new = False
+
+            # shiny and chrome!
+
+            if is_new:
+                logging.info("copy %s to %s" % (path, latest_path))
+                shutil.copy(path, latest_path)
+
+            # recycle all the bytes
+
+            elif not path in preexisting:
+                logging.info("removing %s because it is redundant" % path)
+                os.unlink(path)
+
+            # basically a no-op but it's too late to do anything about it
+
+            else:
+                logging.debug("ALL OF THIS HAS HAPPENED BEFORE")
+                pass
 
     sys.exit()
