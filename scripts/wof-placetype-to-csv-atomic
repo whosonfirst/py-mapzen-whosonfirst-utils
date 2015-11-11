@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+# -*-python-*-
+
+import sys
+import os
+import logging
+import time
+import shutil
+
+import mapzen.whosonfirst.utils
+import mapzen.whosonfirst.meta
+
+if __name__ == '__main__':
+
+    import optparse
+    opt_parser = optparse.OptionParser()
+
+    opt_parser.add_option('-m', '--meta', dest='meta', action='store', default=None, help='Where your meta files are stored (like the parent directory)')
+    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+    options, args = opt_parser.parse_args()
+
+    if options.verbose:	
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    meta = options.meta
+
+    if not meta:
+        logging.error("you forgot to specify a meta file")
+        sys.exit()
+
+    if not os.path.exists(meta):
+        logging.error("meta file (%s) does not exist" % meta)
+        sys.exit()
+
+    now = time.gmtime()
+    ymd = time.strftime("%Y%m%d", now)
+    
+    to_rebuild = {}
+
+    # first plow through the available updates and sort them
+    # by placetype
+
+    for path in args:
+
+        path = os.path.abspath(path)
+
+        feature = mapzen.whosonfirst.utils.load_file(path)
+        props = feature['properties']
+
+        placetype = props['wof:placetype']
+        
+        updated = to_rebuild.get(placetype, [])
+        updated.append(path)
+
+        to_rebuild[placetype] = updated
+
+    # now update each placetype meta file one at a time first checking to
+    # see if there is an existing (YMD) meta file or if we should just start
+    # with the "latest" version
+
+    for placetype, updated in to_rebuild.items():
+
+        count = len(updated)
+
+        if count == 1:
+            logging.info("rebuild meta file for placetype %s with one update" % placetype)
+        else:
+            logging.info("rebuild meta file for placetype %s with %s updates" % (placetype, count))
+
+        fname_ymd = "wof-%s-%s.csv" % (placetype, ymd)
+        fname_latest = "wof-%s-latest.csv" % placetype
+
+        path_ymd = os.path.join(meta, fname_ymd)
+        path_latest = os.path.join(meta, fname_latest)
+
+        source_meta = path_latest
+        dest_meta = path_ymd
+
+        if os.path.exists(path_ymd):
+            source_meta = path_ymd
+
+        if not os.path.exists(source_meta):
+            logging.error("Unable to find source file for %s, expected %s BUT IT'S NOT THERE" % (placetype, source_meta))
+            continue
+
+        mapzen.whosonfirst.meta.update_metafile(source_meta, dest_meta, updated)
+
+        logging.info("copy %s to %s" % (path_ymd, path_latest))
+        shutil.copy(path_ymd, path_latest)

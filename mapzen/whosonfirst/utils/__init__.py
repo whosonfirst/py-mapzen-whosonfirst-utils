@@ -58,6 +58,9 @@ def load(root, id, **kwargs):
     if not os.path.exists(path):
         raise Exception, "%s does not exist" % path
 
+    return load_file(path)
+
+def load_file(path):
     fh = open(path, 'r')
     return geojson.load(fh)
 
