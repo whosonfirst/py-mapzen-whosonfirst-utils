@@ -9,6 +9,8 @@ import os
 import os.path
 import logging
 import re
+import time
+import shutil
 
 import sys 
 import signal
@@ -16,6 +18,7 @@ import multiprocessing
 import hashlib
 
 import mapzen.whosonfirst.placetypes
+import mapzen.whosonfirst.meta
 
 def hash_geom(f):
 
@@ -242,4 +245,64 @@ def crawl(source, **kwargs):
                     ret = data
 
             yield ret
+
+# so that it can be invoked from both a CLI tool and from a git pre-commit hook
+# (20151111/thisisaaronland)
+
+def update_placetype_metafiles(meta, updated):
+
+    now = time.gmtime()
+    ymd = time.strftime("%Y%m%d", now)
     
+    to_rebuild = {}
+
+    # first plow through the available updates and sort them
+    # by placetype
+
+    for path in updated:
+
+        path = os.path.abspath(path)
+
+        feature = load_file(path)
+        props = feature['properties']
+
+        placetype = props['wof:placetype']
+        
+        to_process = to_rebuild.get(placetype, [])
+        to_process.append(path)
+
+        to_rebuild[placetype] = to_process
+
+    # now update each placetype meta file one at a time first checking to
+    # see if there is an existing (YMD) meta file or if we should just start
+    # with the "latest" version
+
+    for placetype, to_process in to_rebuild.items():
+
+        count = len(to_process)
+
+        if count == 1:
+            logging.info("rebuild meta file for placetype %s with one update" % placetype)
+        else:
+            logging.info("rebuild meta file for placetype %s with %s updates" % (placetype, count))
+
+        fname_ymd = "wof-%s-%s.csv" % (placetype, ymd)
+        fname_latest = "wof-%s-latest.csv" % placetype
+
+        path_ymd = os.path.join(meta, fname_ymd)
+        path_latest = os.path.join(meta, fname_latest)
+
+        source_meta = path_latest
+        dest_meta = path_ymd
+
+        if os.path.exists(path_ymd):
+            source_meta = path_ymd
+
+        if not os.path.exists(source_meta):
+            logging.error("Unable to find source file for %s, expected %s BUT IT'S NOT THERE" % (placetype, source_meta))
+            continue
+
+        mapzen.whosonfirst.meta.update_metafile(source_meta, dest_meta, to_process)
+
+        logging.info("copy %s to %s" % (path_ymd, path_latest))
+        shutil.copy(path_ymd, path_latest)
