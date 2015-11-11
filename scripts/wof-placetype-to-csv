@@ -114,7 +114,7 @@ if __name__ == '__main__':
         writer.writeheader()
         writers[pt] = writer
 
-    # start crawling...
+    # start crawling... and remember we are crawling all the things
 
     source = os.path.abspath(options.source)
     crawl = mapzen.whosonfirst.utils.crawl(source)
@@ -129,7 +129,12 @@ if __name__ == '__main__':
         out = mapzen.whosonfirst.meta.dump_file(path, **meta_kwargs)
         placetype = out['placetype']
 
-        writer = writers[placetype]
+        writer = writers.get(placetype, None)
+
+        if not writer:
+            logging.error("Missing a filehandle for writing records of placetype %s (%s), perhaps you need to update your copy of mapzen.whosonfirst.placetypes" % (placetype, path))
+            continue
+
         writer.writerow(out)
 
     for ignore, fh in handles.items():
