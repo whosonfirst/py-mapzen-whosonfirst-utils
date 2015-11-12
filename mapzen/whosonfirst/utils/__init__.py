@@ -251,6 +251,9 @@ def crawl(source, **kwargs):
 
 def update_placetype_metafiles(meta, updated):
 
+    modified = []
+    created = []
+
     now = time.gmtime()
     ymd = time.strftime("%Y%m%d", now)
     
@@ -297,6 +300,14 @@ def update_placetype_metafiles(meta, updated):
 
         if os.path.exists(path_ymd):
             source_meta = path_ymd
+            modified.append(path_ymd)
+        else:
+            created.append(path_ymd)
+
+        if os.path.exists(path_latest):
+            modified.append(path_latest)
+        else:
+            created.append(path_latest)
 
         if not os.path.exists(source_meta):
             logging.error("Unable to find source file for %s, expected %s BUT IT'S NOT THERE" % (placetype, source_meta))
@@ -306,3 +317,5 @@ def update_placetype_metafiles(meta, updated):
 
         logging.info("copy %s to %s" % (path_ymd, path_latest))
         shutil.copy(path_ymd, path_latest)
+
+    return (modified, created)

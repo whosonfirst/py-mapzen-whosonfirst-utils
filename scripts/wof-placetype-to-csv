@@ -132,7 +132,10 @@ if __name__ == '__main__':
         writer = writers.get(placetype, None)
 
         if not writer:
-            logging.error("Missing a filehandle for writing records of placetype %s (%s), perhaps you need to update your copy of mapzen.whosonfirst.placetypes" % (placetype, path))
+
+            if not options.placetypes:
+                logging.error("Missing a filehandle for writing records of placetype %s (%s), perhaps you need to update your copy of mapzen.whosonfirst.placetypes" % (placetype, path))
+
             continue
 
         writer.writerow(out)
