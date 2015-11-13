@@ -8,13 +8,13 @@ desc = open("README.md").read(),
 setup(
     name='mapzen.whosonfirst.utils',
     namespace_packages=['mapzen', 'mapzen.whosonfirst', 'mapzen.whosonfirst.utils'],
-    version='0.14',
+    version='0.15',
     description='Simple Python wrapper for Who\'s On First helper functions',
     author='Mapzen',
     url='https://github.com/mapzen/py-mapzen-whosonfirst-utils',
     install_requires=[
         'mapzen.whosonfirst.placetypes>=0.07',
-        'mapzen.whosonfirst.meta>=0.04',
+        'mapzen.whosonfirst.meta>=0.06',
         'requests',
         'shapely',
         'geojson',
@@ -22,7 +22,7 @@ setup(
         ],
     dependency_links=[
         'https://github.com/whosonfirst/py-mapzen-whosonfirst-placetypes/tarball/master#egg=mapzen.whosonfirst.placetypes-0.07',
-        'https://github.com/whosonfirst/py-mapzen-whosonfirst-meta/tarball/master#egg=mapzen.whosonfirst.meta-0.04',
+        'https://github.com/whosonfirst/py-mapzen-whosonfirst-meta/tarball/master#egg=mapzen.whosonfirst.meta-0.06',
         ],
     packages=packages,
     scripts=[
@@ -41,5 +41,5 @@ setup(
         'scripts/wof-mk-place',
         'scripts/wof-supersede',
         ],
-    download_url='https://github.com/mapzen/py-mapzen-whosonfirst-utils/releases/tag/v0.14',
+    download_url='https://github.com/mapzen/py-mapzen-whosonfirst-utils/releases/tag/v0.15',
     license='BSD')

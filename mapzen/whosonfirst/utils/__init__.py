@@ -249,7 +249,7 @@ def crawl(source, **kwargs):
 # so that it can be invoked from both a CLI tool and from a git pre-commit hook
 # (20151111/thisisaaronland)
 
-def update_placetype_metafiles(meta, updated):
+def update_placetype_metafiles(meta, updated, **kwargs):
 
     modified = []
     created = []
@@ -313,7 +313,7 @@ def update_placetype_metafiles(meta, updated):
             logging.error("Unable to find source file for %s, expected %s BUT IT'S NOT THERE" % (placetype, source_meta))
             continue
 
-        mapzen.whosonfirst.meta.update_metafile(source_meta, dest_meta, to_process)
+        mapzen.whosonfirst.meta.update_metafile(source_meta, dest_meta, to_process, **kwargs)
 
         logging.info("copy %s to %s" % (path_ymd, path_latest))
         shutil.copy(path_ymd, path_latest)
