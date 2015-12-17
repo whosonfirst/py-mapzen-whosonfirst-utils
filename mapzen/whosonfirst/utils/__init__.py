@@ -92,8 +92,13 @@ def id2fname(id, **kwargs):
     # AND ALSO DISPLAY-* NAMES...
     # (20151216/thisisaaronland)
 
-    if kwargs.get('alt', False):
-        return "%s-alt.geojson" % id
+    alt = kwargs.get('alt', None)
+    display = kwargs.get('display', None)
+
+    if alt:
+        return "%s-alt-%s.geojson" % (id, alt)
+    elif display:
+        return "%s-display-%s.geojson" % (id, display)
     else:
         return "%s.geojson" % id
 
