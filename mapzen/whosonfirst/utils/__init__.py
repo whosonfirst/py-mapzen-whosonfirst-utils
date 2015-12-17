@@ -194,23 +194,46 @@ def crawl(source, **kwargs):
     ensure = kwargs.get('ensure_placetype', [])
     skip = kwargs.get('skip_placetype', [])
 
+    is_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
+
     for (root, dirs, files) in os.walk(source):
 
         for f in files:
+
             path = os.path.join(root, f)
             path = os.path.abspath(path)
 
             ret = path
 
-            if not path.endswith('geojson'):
+            fname = os.path.basename(path)
+            fname, ext = os.path.splitext(fname)
+
+            if ext != ".geojson":
                 continue
 
-            # PLEASE FIX ME - ALLOW A WAY TO FILTER OUT alt GEOMETRIES
-            # OR TO SPECIFY SOME/ONLY alt GEOMETRIES...
-            # (20151216/thisisaaronland)
+            m = re.match(is_wof, fname)
 
-            if path.endswith('-alt.geojson'):
+            if not m:
                 continue
+                           
+            id, suffix = m.groups()
+
+            # Hey look we're dealing with an alt file of some kind!
+
+            if suffix != None:
+
+                if not kwargs.get('include_alt', False) and not kwargs.get('require_alt', False):
+                    continue
+
+                # TO DO - filter on specific suffixes...
+                # (20151216/thisisaaronland)
+
+            else:
+
+                if kwargs.get('require_alt', False):
+                    continue
+
+            # OKAY... let's maybe do something?
 
             if validate or inflate or len(skip) or len(ensure):
 
