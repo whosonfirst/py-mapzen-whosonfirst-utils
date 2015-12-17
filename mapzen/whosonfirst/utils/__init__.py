@@ -88,6 +88,10 @@ def id2relpath(id, **kwargs):
 
 def id2fname(id, **kwargs):
 
+    # SUDO FIX ME TO ALLOW FOR MORE DESCRIPTIVE ALT-* NAMES
+    # AND ALSO DISPLAY-* NAMES...
+    # (20151216/thisisaaronland)
+
     if kwargs.get('alt', False):
         return "%s-alt.geojson" % id
     else:
