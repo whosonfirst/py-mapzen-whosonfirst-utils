@@ -205,6 +205,10 @@ def crawl(source, **kwargs):
             if not path.endswith('geojson'):
                 continue
 
+            # PLEASE FIX ME - ALLOW A WAY TO FILTER OUT alt GEOMETRIES
+            # OR TO SPECIFY SOME/ONLY alt GEOMETRIES...
+            # (20151216/thisisaaronland)
+
             if path.endswith('-alt.geojson'):
                 continue
 
