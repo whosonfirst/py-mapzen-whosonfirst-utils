@@ -88,9 +88,11 @@ def id2relpath(id, **kwargs):
 
 def id2fname(id, **kwargs):
 
-    # SUDO FIX ME TO ALLOW FOR MORE DESCRIPTIVE ALT-* NAMES
-    # AND ALSO DISPLAY-* NAMES...
-    # (20151216/thisisaaronland)
+    # See this. It doesn't really allow for new "alternate" names
+    # to be added. For example a bespoke reverse geocoding polygon.
+    # That's not ideal but it's also by design to force us to
+    # actually think about what/how we want to do that...
+    # (20151217/thisisaaronland)
 
     alt = kwargs.get('alt', None)
     display = kwargs.get('display', None)
