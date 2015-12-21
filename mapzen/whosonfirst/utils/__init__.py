@@ -20,6 +20,8 @@ import hashlib
 import mapzen.whosonfirst.placetypes
 import mapzen.whosonfirst.meta
 
+pat_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
+
 def hash_geom(f):
 
     geom = f['geometry']
@@ -216,18 +218,12 @@ def crawl(source, **kwargs):
 
             ret = path
 
-            fname = os.path.basename(path)
-            fname, ext = os.path.splitext(fname)
+            parsed = parse_filename(path)
 
-            if ext != ".geojson":
-                continue
-
-            m = re.match(is_wof, fname)
-
-            if not m:
+            if not parsed:
                 continue
                            
-            id, suffix = m.groups()
+            id, suffix = parsed
 
             # Hey look we're dealing with an alt file of some kind!
 
@@ -357,3 +353,20 @@ def update_placetype_metafiles(meta, updated, **kwargs):
         shutil.copy(path_ymd, path_latest)
 
     return (modified, created)
+
+def parse_filename(path):
+
+    fname = os.path.basename(path)
+    fname, ext = os.path.splitext(fname)
+
+    if ext != ".geojson":
+        return None
+
+    m = re.match(pat_wof, fname)
+
+    if not m:
+        return None
+              
+    id, suffix = m.groups()
+
+    return (id, suffix)
