@@ -280,6 +280,50 @@ def crawl(source, **kwargs):
 
             yield ret
 
+def update_concordances_metafile(meta, updated, **kwargs):
+
+    raise Exception, "Y U WHAT????"
+
+    now = time.gmtime()
+    ymd = time.strftime("%Y%m%d", now)
+
+    fname_ymd = "wof-concordances-%s.csv" % ymd
+    fname_latest = "wof-concordances-latest.csv"
+
+    path_ymd = os.path.join(meta, fname_ymd)
+    path_latest = os.path.join(meta, fname_latest)
+
+    source_meta = path_latest		# what we're reading from (looking for changes)
+    dest_meta = path_ymd		# what we're writing to
+
+    if os.path.exists(path_ymd):
+        source_meta = path_ymd
+        modified.append(path_ymd)
+    else:
+        created.append(path_ymd)
+
+    if os.path.exists(path_latest):
+        modified.append(path_latest)
+    else:
+        created.append(path_latest)
+
+    if not os.path.exists(source_meta):
+        logging.error("Unable to find source file for %s, expected %s BUT IT'S NOT THERE" % (placetype, source_meta))
+        continue
+
+    __update_concordances(source_meta, dest_meta, to_process, **kwargs)
+
+    logging.info("copy %s to %s" % (path_ymd, path_latest))
+    shutil.copy(path_ymd, path_latest)
+
+    return (modified, created)
+
+# stub while I decideif this should live in py-mz-wof-concordances
+
+def __update_concordances(source, dest, to_process, **kwargs):
+    
+    return False
+
 # so that it can be invoked from both a CLI tool and from a git pre-commit hook
 # (20151111/thisisaaronland)
 
