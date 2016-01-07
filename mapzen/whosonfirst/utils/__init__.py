@@ -284,6 +284,9 @@ def update_concordances_metafile(meta, updated, **kwargs):
 
     raise Exception, "Y U WHAT????"
 
+    modified = []
+    created = []
+
     now = time.gmtime()
     ymd = time.strftime("%Y%m%d", now)
 
@@ -308,13 +311,33 @@ def update_concordances_metafile(meta, updated, **kwargs):
         created.append(path_latest)
 
     if not os.path.exists(source_meta):
+
+        # See this - we are leaving it to the caller to figure out what
+        # to do in this instance. That is maybe not the correct approach
+        # but it will do for now.
+
+        modified = None
+        created = None
+
+        # In order to generate concordances from scratch this is what we
+        # used to (can still) do:
+        #
+        # /usr/local/bin/wof-dump-concordances -v -e 'sg:id' -c /usr/local/mapzen/whosonfirst.cfg -o /usr/local/mapzen/whosonfirst-data/meta -l
+
+        # And this is the new new because it's about a billion times faster.
+        # Note that YMD is a placeholder for `date +"%Y%m%d"`
+        #
+        # /usr/local/mapzen/go-wof-concordances/bin/wof-concordances-write -processes 200 -source /usr/local/mapzen/whosonfirst-data/data > /usr/local/mapzen/whosonfirst-data/meta/wof-concordances-YMD.csv
+        # cp /usr/local/mapzen/whosonfirst-data/meta/wof-concordances-YMD.csv /usr/local/mapzen/whosonfirst-data/meta/wof-concordances-latest.csv
+
         logging.error("Unable to find source file for %s, expected %s BUT IT'S NOT THERE" % (placetype, source_meta))
-        continue
 
-    __update_concordances(source_meta, dest_meta, to_process, **kwargs)
+    else:
 
-    logging.info("copy %s to %s" % (path_ymd, path_latest))
-    shutil.copy(path_ymd, path_latest)
+        __update_concordances(source_meta, dest_meta, to_process, **kwargs)
+
+        logging.info("copy %s to %s" % (path_ymd, path_latest))
+        shutil.copy(path_ymd, path_latest)
 
     return (modified, created)
 
@@ -322,7 +345,76 @@ def update_concordances_metafile(meta, updated, **kwargs):
 
 def __update_concordances(source, dest, to_process, **kwargs):
     
-    return False
+    to_update = {}
+
+    source_fh = open(source, 'r')
+    reader = csv.reader(fh)
+
+    # First figure out the columns we've got
+
+    cols = reader.next()
+
+    # Next check to see if there are any new ones
+
+    # Note that this does NOT attempt to check and see whether the files
+    # in to_process actually have modified concordances. That is still not
+    # a solved problem but beyond that it is a problem to solve elsewhere
+    # in the stack. This assumes that by the time you pass a list of files
+    # you've satisfied yourself that it's worth the processing time (not to
+    # mention memory) to fill up `to_update` for all the files listed in
+    # to_update. (20160107/thisisaaronland)
+
+    for path in to_process:
+
+        path = os.path.abspath(path)
+        feature = mapzen.whosonfirst.utils.load_file(path)
+
+        props = feature['properties']
+        wofid = props['wof:id']
+
+        concordances = props['wof:concordances']
+        to_update[ wofid ] = concordances
+
+        for src in concordances.keys():
+
+            if not src in cols:
+                cols.append(src)
+
+    cols.sort()
+
+    # Rewind the source concordances file so that we can create a dict reader
+
+    source_fh.seek(0)
+    reader = csv.DictReader(fh)
+
+    writer = None
+
+    with atomicwrites.atomic_write(dest_meta, mode='wb', overwrite=True) as dest_fh:
+
+        for row in reader:
+
+            if not writer:
+                fn = fieldnames()
+                writer = csv.DictWriter(dest_fh, fieldnames=cols)
+                writer.writeheader()
+
+            # See what we're doing here? If this is a record that's been
+            # updated (see above for the nuts and bolts about how/where
+            # we determine this) then we reassign it to `row`.
+
+            wofid = row.get('wof:id')
+
+            if to_update.get(wofid, False):
+                row = to_update[wofid]
+
+            out = {}
+
+            # Esnure we have a value or "" for every src in cols
+
+            for src in cols:
+                out[ src ] = row.get(src, "")
+
+            writer.writerow(out)
 
 # so that it can be invoked from both a CLI tool and from a git pre-commit hook
 # (20151111/thisisaaronland)
