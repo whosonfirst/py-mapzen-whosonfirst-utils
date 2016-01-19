@@ -20,6 +20,13 @@ import hashlib
 import mapzen.whosonfirst.placetypes
 import mapzen.whosonfirst.meta
 
+# used by the update concordances stuff so it will probably
+# be moved in to its own package shortly
+
+import atomicwrites
+import csv
+
+# used in parse_filename
 pat_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
 
 def hash_geom(f):
@@ -280,9 +287,9 @@ def crawl(source, **kwargs):
 
             yield ret
 
-def update_concordances_metafile(meta, updated, **kwargs):
+def update_concordances_metafile(meta, to_process, **kwargs):
 
-    raise Exception, "Y U WHAT????"
+    # raise Exception, "Y U WHAT????"
 
     modified = []
     created = []
@@ -348,7 +355,7 @@ def __update_concordances(source, dest, to_process, **kwargs):
     to_update = {}
 
     source_fh = open(source, 'r')
-    reader = csv.reader(fh)
+    reader = csv.reader(source_fh)
 
     # First figure out the columns we've got
 
@@ -385,16 +392,15 @@ def __update_concordances(source, dest, to_process, **kwargs):
     # Rewind the source concordances file so that we can create a dict reader
 
     source_fh.seek(0)
-    reader = csv.DictReader(fh)
+    reader = csv.DictReader(source_fh)
 
     writer = None
 
-    with atomicwrites.atomic_write(dest_meta, mode='wb', overwrite=True) as dest_fh:
+    with atomicwrites.atomic_write(dest, mode='wb', overwrite=True) as dest_fh:
 
         for row in reader:
 
             if not writer:
-                fn = fieldnames()
                 writer = csv.DictWriter(dest_fh, fieldnames=cols)
                 writer.writeheader()
 

@@ -19,6 +19,7 @@ setup(
         'shapely',
         'geojson',
         'boto',
+        'atomicwrites',
         ],
     dependency_links=[
         'https://github.com/whosonfirst/py-mapzen-whosonfirst-placetypes/tarball/master#egg=mapzen.whosonfirst.placetypes-0.10',
