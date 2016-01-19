@@ -337,7 +337,7 @@ def update_concordances_metafile(meta, to_process, **kwargs):
         # /usr/local/mapzen/go-wof-concordances/bin/wof-concordances-write -processes 200 -source /usr/local/mapzen/whosonfirst-data/data > /usr/local/mapzen/whosonfirst-data/meta/wof-concordances-YMD.csv
         # cp /usr/local/mapzen/whosonfirst-data/meta/wof-concordances-YMD.csv /usr/local/mapzen/whosonfirst-data/meta/wof-concordances-latest.csv
 
-        logging.error("Unable to find source file for %s, expected %s BUT IT'S NOT THERE" % (placetype, source_meta))
+        logging.error("Unable to find source file for concordances, expected %s BUT IT'S NOT THERE" % source_meta)
 
     else:
 
@@ -409,9 +409,11 @@ def __update_concordances(source, dest, to_process, **kwargs):
             # we determine this) then we reassign it to `row`.
 
             wofid = row.get('wof:id')
+            wofid = int(wofid)
 
             if to_update.get(wofid, False):
                 row = to_update[wofid]
+                row['wof:id'] = wofid
 
             out = {}
 
