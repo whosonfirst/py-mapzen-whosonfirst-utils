@@ -38,6 +38,19 @@ def hash_geom(f):
     hash.update(geom)
     return hash.hexdigest()
 
+def hash_file(path):
+
+    try:
+        fh = open(path, "r")
+    except Exception, e:
+        logging.error("failed to open %s for hashing, because %s" % (path, e))
+        return None
+
+    hash = hashlib.md5()
+    hash.update(fh.read())
+    
+    return hash.hexdigest()
+
 def is_valid_latitude(lat):
     lat = float(lat)
 
@@ -343,8 +356,20 @@ def update_concordances_metafile(meta, to_process, **kwargs):
 
         __update_concordances(source_meta, dest_meta, to_process, **kwargs)
 
-        logging.info("copy %s to %s" % (path_ymd, path_latest))
-        shutil.copy(path_ymd, path_latest)
+        hash_ymd = hash_file(path_ymd)
+        hash_latest = hash_file(path_latest)
+
+        if hash_ymd == hash_latest:
+
+            logging.info("%s is the same as %s, so pruning" % (path_ymd, path_latest))
+            os.unlink(path_latest)
+
+            created = []
+            modified = []
+
+        else:
+            logging.info("copy %s to %s" % (path_ymd, path_latest))
+            shutil.copy(path_ymd, path_latest)
 
     return (modified, created)
 
