@@ -11,7 +11,9 @@ import logging
 import re
 import time
 import shutil
+import types
 
+import inspect
 import sys 
 import signal
 import multiprocessing
@@ -78,10 +80,36 @@ def is_valid_longitude(lon):
 
 def load(root, id, **kwargs):
 
-    path = id2abspath(root, id, **kwargs)
+    if type(root) in (types.ListType, types.TupleType) :
 
-    if not os.path.exists(path):
-        raise Exception, "%s does not exist" % path
+        path = None
+
+        for r in root:
+
+            p = id2abspath(r, id, **kwargs)
+
+            if not os.path.exists(p):
+                logging.debug("%s does not exist" % p)
+                continue
+
+            path = p
+            break
+
+    else:
+
+        stack = inspect.stack()[1]
+        file = stack[1]
+        line = stack[2]
+        func = stack[3]
+
+        caller = "caller %s (%s at ln%s)" % (func, file, line)
+        logging.warning("%s is invoking 'mapzen.whosonfirst.utils.load' in not-a-list context"% caller)
+
+        path = id2abspath(root, id, **kwargs)
+
+    if not path or not os.path.exists(path):
+        logging.error("unable to locate path for %s (%s)" % (id, root))
+        raise Exception, "unable to locate path for %s (%s)" % (id, root)
 
     return load_file(path)
 
