@@ -39,6 +39,7 @@ setup(
         ],
     packages=packages,
     scripts=[
+        'scripts/wof-check-etags',
         'scripts/wof-dump-concordances-local',
         'scripts/wof-dump-hierarchies',
         'scripts/wof-dump-superseded',
