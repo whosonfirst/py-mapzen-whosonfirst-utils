@@ -264,6 +264,9 @@ def crawl(source, **kwargs):
             path = os.path.join(root, f)
             path = os.path.abspath(path)
 
+            # TO DO: use is_valid_wof below, once it's finished
+            # (20160229/thisisaaronland)
+
             ret = path
 
             parsed = parse_filename(path)
@@ -327,6 +330,74 @@ def crawl(source, **kwargs):
                     ret = data
 
             yield ret
+
+def is_valid_wof(path, **kwargs):
+
+    validate = kwargs.get('validate', False)
+    inflate = kwargs.get('inflate', False)
+
+    ensure = kwargs.get('ensure_placetype', [])
+    skip = kwargs.get('skip_placetype', [])
+
+    is_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
+
+    path = os.path.abspath(path)
+    parsed = parse_filename(path)
+
+    if not parsed:
+        return False
+
+    id, suffix = parsed
+
+    # Hey look we're dealing with an alt file of some kind!
+
+    if suffix != None:
+
+        if not kwargs.get('include_alt', False) and not kwargs.get('require_alt', False):
+            return False
+
+        # TO DO - filter on specific suffixes...
+        # (20151216/thisisaaronland)
+
+    else:
+
+        if kwargs.get('require_alt', False):
+            return False
+
+    # OKAY... let's maybe do something?
+
+    if validate or inflate or len(skip) or len(ensure):
+
+        try:
+            fh = open(path, 'r')
+            data = geojson.load(fh)
+
+        except Exception, e:
+            logging.error("failed to load %s, because %s" % (path, e))
+            return False
+
+        if len(ensure):
+
+            props = data['properties']
+            pt = props.get('wof:placetype', None)
+
+            if not pt in ensure:
+                logging.debug("skipping %s because it is a %s" % (path, pt))
+                return False
+
+            elif len(skip):
+
+                props = data['properties']
+                pt = props.get('wof:placetype', None)
+
+                if pt in skip:
+                    logging.debug("skipping %s because it is a %s" % (path, pt))
+                    return False
+
+                if not pt:
+                    logging.error("can not determine placetype for %s" % path)
+
+    return True
 
 def update_concordances_metafile(meta, to_process, **kwargs):
 
