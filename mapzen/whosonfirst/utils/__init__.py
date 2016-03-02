@@ -249,13 +249,7 @@ def _callback_wrapper(args):
     
 def crawl(source, **kwargs):
 
-    validate = kwargs.get('validate', False)
     inflate = kwargs.get('inflate', False)
-
-    ensure = kwargs.get('ensure_placetype', [])
-    skip = kwargs.get('skip_placetype', [])
-
-    is_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
 
     for (root, dirs, files) in os.walk(source):
 
@@ -264,74 +258,27 @@ def crawl(source, **kwargs):
             path = os.path.join(root, f)
             path = os.path.abspath(path)
 
-            # TO DO: use is_valid_wof below, once it's finished
-            # (20160229/thisisaaronland)
+            ret = ensure_valid_wof(path, **kwargs)
 
-            ret = path
-
-            parsed = parse_filename(path)
-
-            if not parsed:
+            if not ret:
                 continue
-                           
-            id, suffix = parsed
-
-            # Hey look we're dealing with an alt file of some kind!
-
-            if suffix != None:
-
-                if not kwargs.get('include_alt', False) and not kwargs.get('require_alt', False):
-                    continue
-
-                # TO DO - filter on specific suffixes...
-                # (20151216/thisisaaronland)
-
-            else:
-
-                if kwargs.get('require_alt', False):
-                    continue
-
-            # OKAY... let's maybe do something?
-
-            if validate or inflate or len(skip) or len(ensure):
-
-                try:
-                    fh = open(path, 'r')
-                    data = geojson.load(fh)
-
-                except Exception, e:
-                    logging.error("failed to load %s, because %s" % (path, e))
-                    continue
-
-                if len(ensure):
-
-                    props = data['properties']
-                    pt = props.get('wof:placetype', None)
-
-                    if not pt in ensure:
-                        logging.debug("skipping %s because it is a %s" % (path, pt))
-                        continue
-
-                elif len(skip):
-
-                    props = data['properties']
-                    pt = props.get('wof:placetype', None)
-
-                    if pt in skip:
-                        logging.debug("skipping %s because it is a %s" % (path, pt))
-                        continue
-
-                    if not pt:
-                        logging.error("can not determine placetype for %s" % path)
-
-                if not inflate:
-                    ret = path
-                else:
-                    ret = data
 
             yield ret
 
+# this wraps ensure_valid_wof and returns True or False
+
 def is_valid_wof(path, **kwargs):
+
+    ret = ensure_valid_wof(path, **kwargs)
+
+    if not ret:
+        return False
+
+    return True
+
+# this returns None or a path or a GeoJSON blob
+
+def ensure_valid_wof(path, **kwargs):
 
     validate = kwargs.get('validate', False)
     inflate = kwargs.get('inflate', False)
@@ -345,7 +292,7 @@ def is_valid_wof(path, **kwargs):
     parsed = parse_filename(path)
 
     if not parsed:
-        return False
+        return None
 
     id, suffix = parsed
 
@@ -354,7 +301,7 @@ def is_valid_wof(path, **kwargs):
     if suffix != None:
 
         if not kwargs.get('include_alt', False) and not kwargs.get('require_alt', False):
-            return False
+            return None
 
         # TO DO - filter on specific suffixes...
         # (20151216/thisisaaronland)
@@ -362,9 +309,11 @@ def is_valid_wof(path, **kwargs):
     else:
 
         if kwargs.get('require_alt', False):
-            return False
+            return None
 
     # OKAY... let's maybe do something?
+
+    ret = path
 
     if validate or inflate or len(skip) or len(ensure):
 
@@ -374,7 +323,7 @@ def is_valid_wof(path, **kwargs):
 
         except Exception, e:
             logging.error("failed to load %s, because %s" % (path, e))
-            return False
+            return None
 
         if len(ensure):
 
@@ -383,7 +332,7 @@ def is_valid_wof(path, **kwargs):
 
             if not pt in ensure:
                 logging.debug("skipping %s because it is a %s" % (path, pt))
-                return False
+                return None
 
             elif len(skip):
 
@@ -392,12 +341,14 @@ def is_valid_wof(path, **kwargs):
 
                 if pt in skip:
                     logging.debug("skipping %s because it is a %s" % (path, pt))
-                    return False
+                    return None
 
                 if not pt:
                     logging.error("can not determine placetype for %s" % path)
 
-    return True
+        ret = data
+
+    return ret
 
 def update_concordances_metafile(meta, to_process, **kwargs):
 
