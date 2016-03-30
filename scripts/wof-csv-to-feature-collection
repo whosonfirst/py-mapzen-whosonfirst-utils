@@ -22,7 +22,8 @@ if __name__ == '__main__':
     opt_parser.add_option('-m', '--max', dest='max', action='store', default=None, help='The maximum number of records in asingle GeoJSON file')
     opt_parser.add_option('-l', '--slim', dest='slim', action='store_true', default=False, help='Limit property export to subset (roughly those in the CSV file), reduce file size.')
     opt_parser.add_option('-k', '--slim-keys', dest='keys', action='store', default=None, help='Ordered list of keys (properties) that are exported in slim mode.')
-    opt_parser.add_option('-t', '--slim-placetype', dest='placetype', action='store', default=None, help='Adjust canned list of keys in slim mode.')
+    opt_parser.add_option('-e', '--slim-template', dest='keys_template', action='store', default=None, help='Trim key names to fit Esri Shapefile format 8 char length limit.')
+    opt_parser.add_option('-t', '--slim-placetype', dest='placetype', action='store', default=None, help='Add additional neighbourhood keys.')
 
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
     opt_parser.add_option('-o', '--out', dest='out', action='store', default=None, help='Where to write feature collection (default is STDOUT)')
@@ -48,15 +49,71 @@ if __name__ == '__main__':
 
     logging.debug("max records per geojson file: %s" % max_records)        
 
+    wof_slim_key_lookup = { 
+        'name':'wof:name',
+        'id':'wof:id',
+        'placetype':'wof:placetype',
+        'placetype':'wof:placetype',
+        'parent_id':'wof:parent_id',
+        'parent':'wof:parent_id',
+        'country_id':'wof:hierarchy[0]["country_id"]',
+        'country':'wof:hierarchy[0]["country_id"]',
+        'region_id':'wof:hierarchy[0]["region_id"]',
+        'region':'wof:hierarchy[0]["region_id"]',
+        'locality_id':'wof:hierarchy[0]["locality_id"]',
+        'locality':'wof:hierarchy[0]["locality_id"]',
+        'wof_country':'wof:country',
+        'wof_a3':'wof:country',
+        'iso_country':'iso:country',
+        'iso_a3':'iso:country',
+        'lbl_latitude':'lbl:latitude',
+        'lbl_lat':'lbl:latitude',
+        'lbl_longitude':'lbl:longitude',
+        'lbl_long':'lbl:longitude',
+        'inception':'edtf:inception',
+        'incept':'edtf:inception',
+        'cessation':'edtf:cessation',
+        'cessat':'edtf:cessation',
+        'deprecated':'edtf:deprecated',
+        'deprec':'edtf:deprecated',
+        'supersedes':'wof:supersedes[0]',
+        'super':'wof:supersedes[0]',
+        'superseded_by':'wof:superseded_by[0]',
+        'super_by':'wof:superseded_by[0]',
+        'lastmodified':'wof:lastmodified',
+        'lastmod':'wof:lastmodified',
+        'source':'src:geom',
+        'is_funky':'mz:is_funky',
+        'is_hard_boundary':'mz:is_hard_boundary',
+        'is_hard':'mz:is_hard_boundary',
+        'is_landuse_aoi':'mz:is_landuse_aoi',
+        'is_aoi':'mz:is_landuse_aoi',
+        'is_official':'mz:is_official',
+        'is_offic':'mz:is_official',
+        'max_zoom':'mz:max_zoom',
+        'min_zoom':'mz:min_zoom',
+        'tier_locality':'mz:tier_locality',
+        'tier_local':'mz:tier_locality'
+    }
     
-    slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','lbl_latitude','lbl_longitude','path']
-    #slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','iso_country','lbl_latitude','lbl_longitude','inception','cessation','deprecated','supersedes','superseded_by','lastmodified','source','path']
-
+    slim_keys = []
+    
     if options.keys:
         slim_keys = options.keys.split(',')
-
-    if options.placetype == 'neighbourhood':
-        slim_keys.extend( ['is_funky','is_hard_boundary','is_landuse_aoi','is_official','max_zoom','min_zoom','tier_locality'] )
+    else:
+        if options.keys_template:
+            if options.keys_template == 'shapefile':
+                slim_keys = ['name','id','placetype','parent','country','region','locality','wof_a3','lbl_lat','lbl_long']
+            elif options.keys_template == 'more':
+                slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','iso_country','lbl_latitude','lbl_longitude','inception','cessation','deprecated','supersedes','superseded_by','lastmodified','source']
+        else:
+            slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','lbl_latitude','lbl_longitude']
+        
+        if options.placetype == 'neighbourhood':
+            if options.keys_template == 'shapefile':
+                slim_keys.extend( ['is_funky','is_hard','is_aoi','is_offic','max_zoom','min_zoom','tier_local'] )
+            else:
+                slim_keys.extend( ['is_funky','is_hard_boundary','is_landuse_aoi','is_official','max_zoom','min_zoom','tier_locality'] )
 
     if options.slim:
         logging.debug("slim properties export mode")
@@ -158,9 +215,22 @@ if __name__ == '__main__':
             out.write(",")
 
         if options.slim:
-            record = fdata.read()
-            # TODO: reconstruct properties to match ordered whitelist
-            out.write(record)
+            data = geojson.loads(fdata.read())
+            props = data['properties']
+            #print data # props is an object
+            fresh_props = {}
+            for key in slim_keys:
+                try:
+                    # if there are nested props, it only gets the first one, see wof_slim_key_lookup logic above
+                    fresh_props.update( { key: props[ wof_slim_key_lookup[key] ] } )
+                except:
+                    logging.debug("\tmissing key: %s for %s" % (key, wof_slim_key_lookup[key]))
+                    fresh_props.update( { key: -1 } )
+            #print fresh_props
+            # this won't be an ordered list, sadly
+            data['properties'] = fresh_props
+            #print data
+            out.write(geojson.dumps(data))
         else:
             out.write(fdata.read())
 
