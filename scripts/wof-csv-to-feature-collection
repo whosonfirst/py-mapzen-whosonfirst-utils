@@ -20,6 +20,9 @@ if __name__ == '__main__':
     opt_parser.add_option('-s', '--source', dest='source', action='store', default='fs', help='Where to read files from (default is "fs")')
     opt_parser.add_option('-p', '--prefix', dest='prefix', action='store', default=None, help='Prefix for paths in CSV file (optional)')
     opt_parser.add_option('-m', '--max', dest='max', action='store', default=None, help='The maximum number of records in asingle GeoJSON file')
+    opt_parser.add_option('-l', '--slim', dest='slim', action='store_true', default=False, help='Limit property export to subset (roughly those in the CSV file), reduce file size.')
+    opt_parser.add_option('-k', '--slim-keys', dest='keys', action='store', default=None, help='Ordered list of keys (properties) that are exported in slim mode.')
+    opt_parser.add_option('-t', '--slim-placetype', dest='placetype', action='store', default=None, help='Adjust canned list of keys in slim mode.')
 
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
     opt_parser.add_option('-o', '--out', dest='out', action='store', default=None, help='Where to write feature collection (default is STDOUT)')
@@ -28,7 +31,7 @@ if __name__ == '__main__':
 
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:    
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -43,7 +46,21 @@ if __name__ == '__main__':
         max_records = int(options.max)
         max_records = max(0, max_records)
 
-    logging.debug("max records per geojson file: %s" % max_records)
+    logging.debug("max records per geojson file: %s" % max_records)        
+
+    
+    slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','lbl_latitude','lbl_longitude','path']
+    #slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','iso_country','lbl_latitude','lbl_longitude','inception','cessation','deprecated','supersedes','superseded_by','lastmodified','source','path']
+
+    if options.keys:
+        slim_keys = options.keys.split(',')
+
+    if options.placetype == 'neighbourhood':
+        slim_keys.extend( ['is_funky','is_hard_boundary','is_landuse_aoi','is_official','max_zoom','min_zoom','tier_locality'] )
+
+    if options.slim:
+        logging.debug("slim properties export mode")
+        logging.debug("\t%s" % slim_keys)
 
     out = None
 
@@ -140,7 +157,12 @@ if __name__ == '__main__':
         else:
             out.write(",")
 
-        out.write(fdata.read())
+        if options.slim:
+            record = fdata.read()
+            # TODO: reconstruct properties to match ordered whitelist
+            out.write(record)
+        else:
+            out.write(fdata.read())
 
         counter += 1
 
