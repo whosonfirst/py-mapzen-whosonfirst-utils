@@ -562,6 +562,9 @@ def update_placetype_metafiles(meta, updated, **kwargs):
         else:
             created.append(path_latest)
 
+        # https://github.com/whosonfirst/py-mapzen-whosonfirst-utils/issues/9
+        # ./scripts/wof-placetype-to-csv -s /usr/local/data/whosonfirst-data/data -p PLACETYPE -c /usr/local/data/whosonfirst-data/meta
+
         if not os.path.exists(source_meta):
             logging.error("Unable to find source file for %s, expected %s BUT IT'S NOT THERE" % (placetype, source_meta))
             continue
