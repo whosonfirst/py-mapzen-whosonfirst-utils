@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import logging
+import csv
+
+if __name__ == '__main__':
+
+    import optparse
+
+    opt_parser = optparse.OptionParser()
+
+    opt_parser.add_option('-c', '--country', dest='country', action='store', default=None, help='The (WOF) country code you want to filter by')
+    opt_parser.add_option('-o', '--out', dest='out', action='store', default=None, help='Where to write your filtered data (default is STDOUT)')
+    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+
+    options, args = opt_parser.parse_args()
+
+    if options.verbose:	
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    writer = None
+
+    for path in args:
+
+        fh = open(path, 'r')
+        reader = csv.DictReader(fh)
+
+        for row in reader:
+            
+            if row['wof_country'].upper() != options.country.upper():
+                continue
+
+            if not writer:
+
+                out = sys.stdout
+
+                if options.out:
+                    out = open(options.out, 'w')
+
+                writer = csv.DictWriter(out, fieldnames=row.keys())
+                writer.writeheader()
+
+            writer.writerow(row)

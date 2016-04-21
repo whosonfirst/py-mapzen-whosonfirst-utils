@@ -44,6 +44,7 @@ setup(
         'scripts/wof-dump-hierarchies',
         'scripts/wof-dump-superseded',
         'scripts/wof-concordances-to-db',
+        'scripts/wof-filter-meta',
         'scripts/wof-id2git',
         'scripts/wof-inventory-properties',
         'scripts/wof-placetype-to-csv',
