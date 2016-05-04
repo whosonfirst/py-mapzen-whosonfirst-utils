@@ -7,6 +7,8 @@ import csv
 import pprint
 import geojson
 
+import mapzen.whosonfirst.utils
+
 import requests
 import StringIO
 import boto.s3.connection
@@ -24,6 +26,7 @@ if __name__ == '__main__':
     opt_parser.add_option('-k', '--slim-keys', dest='keys', action='store', default=None, help='Ordered list of keys (properties) that are exported in slim mode.')
     opt_parser.add_option('-e', '--slim-template', dest='keys_template', action='store', default=None, help='Trim key names to fit Esri Shapefile format 8 char length limit.')
     opt_parser.add_option('-t', '--slim-placetype', dest='placetype', action='store', default=None, help='Add additional neighbourhood keys.')
+    opt_parser.add_option('-f', '--slim-filter-belongs-to', dest='place_filter', action='store', default=None, help='Limit to a WOF hierarchy.')
 
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
     opt_parser.add_option('-o', '--out', dest='out', action='store', default=None, help='Where to write feature collection (default is STDOUT)')
@@ -158,9 +161,22 @@ if __name__ == '__main__':
 
     for row in reader:
 
+        path = row.get('path', None)
+
+        # start of path kludge
         # add logic here for concordance files that only have wof:id for
         # dealing with venues which only have concordance CSVs
-        path = row['path']
+        
+        if path == None:
+            wof_id = row.get('wof:id', None)
+            
+            if wof_id == None:
+                logging.error( 'omgwft' )
+                sys.exit()
+                
+            path = mapzen.whosonfirst.utils.id2relpath( wof_id )
+        
+        # end of path kludge
 
         if options.prefix:
             path = os.path.join(options.prefix, path)
@@ -235,6 +251,13 @@ if __name__ == '__main__':
         if options.slim:
             data = geojson.loads(fdata.read())
             props = data['properties']
+            
+            if options.place_filter:
+                filter = int( options.place_filter )
+                
+                if not filter in props[ "wof:belongsto" ]:
+                    continue
+            
             #print data # props is an object
             fresh_props = {}
             for key in slim_keys:
