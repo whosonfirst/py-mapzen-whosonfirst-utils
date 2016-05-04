@@ -93,7 +93,17 @@ if __name__ == '__main__':
         'max_zoom':'mz:max_zoom',
         'min_zoom':'mz:min_zoom',
         'tier_locality':'mz:tier_locality',
-        'tier_local':'mz:tier_locality'
+        'tier_local':'mz:tier_locality',
+        'address':'sg:address',
+        'city':'sg:city',
+        'cl_cat':'sg:classifiers:category',
+        'cl_subcat':'sg:classifiers:subcategory',
+        'cl_type':'sg:classifiers:type',
+        'owner':'sg:owner',
+        'phone':'sg:phone',
+        'postcode':'sg:postcode',
+        'province':'sg:province',
+        'tags':'sg:tags'
     }
     
     slim_keys = []
@@ -114,6 +124,12 @@ if __name__ == '__main__':
                 slim_keys.extend( ['is_funky','is_hard','is_aoi','is_offic','max_zoom','min_zoom','tier_local'] )
             else:
                 slim_keys.extend( ['is_funky','is_hard_boundary','is_landuse_aoi','is_official','max_zoom','min_zoom','tier_locality'] )
+
+        if options.placetype == 'venue':
+            if options.keys_template == 'shapefile':
+                slim_keys.extend( ['address', 'city', 'cl_cat', 'cl_subcat', 'cl_type', 'owner', 'phone', 'postcode', 'province', 'tags'] )
+            else:
+                slim_keys.extend( ['address', 'city', 'classifiers_cat', 'classifiers_subcat', 'classifiers_type', 'owner', 'phone', 'postcode', 'province', 'tags'] )
 
     if options.slim:
         logging.debug("slim properties export mode")
@@ -142,6 +158,8 @@ if __name__ == '__main__':
 
     for row in reader:
 
+        # add logic here for concordance files that only have wof:id for
+        # dealing with venues which only have concordance CSVs
         path = row['path']
 
         if options.prefix:
