@@ -99,12 +99,12 @@ if __name__ == '__main__':
         'tier_local':'mz:tier_locality',
         'address':'sg:address',
         'city':'sg:city',
-        'classifiers_cat':'sg:classifiers:category',
-        'classifiers_subcat':'sg:classifiers:subcategory',
-        'classifiers_type':'sg:classifiers:type',
-        'cl_cat':'sg:classifiers:category',
-        'cl_subcat':'sg:classifiers:subcategory',
-        'cl_type':'sg:classifiers:type',
+        'classifiers_cat':'sg:classifiers["category"]',
+        'classifiers_subcat':'sg:classifiers["subcategory"]',
+        'classifiers_type':'sg:classifiers["type"]',
+        'cl_cat':'sg:classifiers["category"]',
+        'cl_subcat':'sg:classifiers["subcategory"]',
+        'cl_type':'sg:classifiers["type"]',
         'owner':'sg:owner',
         'phone':'sg:phone',
         'postcode':'sg:postcode',
@@ -244,12 +244,12 @@ if __name__ == '__main__':
             else:
                 out = sys.stdout
 
-            out.write("""{"type": "FeatureCollection", "features": [""")
+            # See this? Yeah... it makes you sad, doesn't it. That's okay.
+            # Compare your sadness at this to your sadness at ogr2ogr FREAKING
+            # OUT AND DIEING on records with too many features in them triggering
+            # the E_EXCESSIVE_GIGABYTE error and then just move on.
 
-        if first == True:
-            first = False
-        else:
-            out.write(",")
+            out.write("""{"type": "FeatureCollection", "features": [""")
 
         if options.slim:
             data = geojson.loads(fdata.read())
@@ -261,12 +261,29 @@ if __name__ == '__main__':
                 if not filter in props[ "wof:belongsto" ]:
                     continue
             
+            if first == True:
+                first = False
+            else:
+                out.write(",\r")
+
             #print data # props is an object
             fresh_props = {}
             for key in slim_keys:
                 try:
                     # if there are nested props, it only gets the first one, see wof_slim_key_lookup logic above
-                    fresh_props.update( { key: props[ wof_slim_key_lookup[key] ] } )
+                    if key in ('country_id', 'region_id', 'locality_id'):
+                        fresh_props.update( { key: props["wof:hierarchy"][0][ key ] } )
+                    elif key in ('country', 'region', 'locality'):
+                        key = "%s_id" % key
+                        fresh_props.update( { key: props["wof:hierarchy"][0][ key ] } )
+                    elif key in ('classifiers_cat', 'cl_cat'):
+                        fresh_props.update( { key: props["sg:classifiers"][0]["category"] } )
+                    elif key in ('classifiers_subcat', 'cl_subcat'):
+                        fresh_props.update( { key: props["sg:classifiers"][0]["subcategory"] } )
+                    elif key in ('classifiers_type', 'cl_type'):
+                        fresh_props.update( { key: props["sg:classifiers"][0]["type"] } )
+                    else:
+                        fresh_props.update( { key: props[ wof_slim_key_lookup[key] ] } )
                 except:
                     logging.debug("\tmissing key: %s for %s" % (key, wof_slim_key_lookup[key]))
                     fresh_props.update( { key: -1 } )
@@ -276,6 +293,11 @@ if __name__ == '__main__':
             #print data
             out.write(geojson.dumps(data))
         else:
+            if first == True:
+                first = False
+            else:
+                out.write(",")
+
             out.write(fdata.read())
 
         counter += 1
