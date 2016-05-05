@@ -252,7 +252,7 @@ if __name__ == '__main__':
             out.write("""{"type": "FeatureCollection", "features": [""")
 
         if options.slim:
-            data = geojson.loads(fdata.read())
+            data = geojson.load(fdata)
             props = data['properties']
             
             if options.place_filter:
@@ -264,6 +264,7 @@ if __name__ == '__main__':
             if first == True:
                 first = False
             else:
+                # add a new line between records for easier debug but larger file size
                 out.write(",\r")
 
             #print data # props is an object
@@ -291,7 +292,7 @@ if __name__ == '__main__':
             # this won't be an ordered list, sadly
             data['properties'] = fresh_props
             #print data
-            out.write(geojson.dumps(data))
+            geojson.dump(data, out)
         else:
             if first == True:
                 first = False
