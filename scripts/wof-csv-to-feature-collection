@@ -290,7 +290,8 @@ if __name__ == '__main__':
                     fresh_props.update( { key: -1 } )
             #print fresh_props
             # this won't be an ordered list, sadly
-            data['properties'] = fresh_props
+            if options.keys_template != "full":
+                    data['properties'] = fresh_props
             #print data
             geojson.dump(data, out)
         else:
