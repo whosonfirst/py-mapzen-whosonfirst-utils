@@ -3,11 +3,14 @@
 import sys
 import os.path
 import logging
-import geojson
+import datetime
 import copy
 import pprint
 
+import mapzen.whosonfirst
 import mapzen.whosonfirst.utils
+import mapzen.whosonfirst.pip.utils
+import mapzen.whosonfirst.placetypes
 import mapzen.whosonfirst.export
 
 if __name__ == '__main__':
@@ -17,7 +20,9 @@ if __name__ == '__main__':
 
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
     opt_parser.add_option('-w', '--wofid', dest='wofid', action='store', default=None, help='The WOF ID that is about to be superseded')
+    opt_parser.add_option('-p', '--placetype', dest='placetype', action='store', default=None, help='Assign the newly created record to have this placetype')
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+    opt_parser.add_option('-n', '--dry-run', dest='dryrun', action='store_true', default=False, help='...')
     options, args = opt_parser.parse_args()
 
     if options.verbose:	
@@ -29,28 +34,25 @@ if __name__ == '__main__':
         logging.error("Missing WOF ID")
         sys.exit()
 
+    mapzen.whosonfirst.ensure_current(liberal=True)
+
     id = options.wofid
 
+    if not id:
+        logging.error("Missing WOF ID!")
+        sys.exit(1)
+
+    if options.placetype:
+
+        if not mapzen.whosonfirst.placetypes.is_valid_placetype(options.placetype):
+            logging.error("Invalid placetype!")
+            sys.exit(1)
+
     source = os.path.abspath(options.source)
-    path = mapzen.whosonfirst.utils.id2abspath(source, id)
+    feature = mapzen.whosonfirst.utils.load([source], id)
 
-    if not os.path.exists(path):
-        logging.error("%s does not exist")
-        sys.exit()
-
-    # sudo put me in a function?
-
-    old_record = None
-    new_record = None
-
-    try:
-        fh = open(path, 'r')
-        old_record = geojson.load(fh)
-    except Exception, e:
-        logging.error("failed to open %s, because %s" % (path, e))
-        sys.exit()
-
-    new_record = copy.deepcopy(old_record)
+    old_record = feature
+    new_record = copy.deepcopy(feature)
     
     old_props = old_record['properties']
     new_props = new_record['properties']
@@ -67,19 +69,32 @@ if __name__ == '__main__':
     if not new_id in old_props['wof:superseded_by']:
         old_props['wof:superseded_by'].append(new_id)
 
-    logging.debug(pprint.pformat(old_props))
-    logging.debug(pprint.pformat(new_props))
+    now = datetime.datetime.now()
+    ymd = now.strftime("%Y-%m-%d")
+    
+    old_props['edtf:superseded'] = ymd
 
     old_record['properties'] = old_props
     new_record['properties'] = new_props
 
-    # end of sudo put me in a function?
+    # we validate placetype above
 
-    exporter = mapzen.whosonfirst.export.flatfile(source)
-    exporter.export_feature(old_record)
-    exporter.export_feature(new_record)
+    if options.placetype:
+        new_props['wof:placetype'] = options.placetype
+        new_record['properties'] = new_props
 
-    # to do - update children of old_record?
+        admin_data = options.source	# PLEASE FIX ME
+        mapzen.whosonfirst.pip.utils.append_hierarchy_and_parent(new_record, data_root=[admin_data])
+
+    logging.debug(pprint.pformat(old_props))
+    logging.debug(pprint.pformat(new_props))
+
+    if options.dryrun:
+        logging.info("dry run mode is enabled, so we are not actually writing anything to disk")
+    else:
+        exporter = mapzen.whosonfirst.export.flatfile(source)
+        exporter.export_feature(old_record)
+        exporter.export_feature(new_record)
 
     new_path = mapzen.whosonfirst.utils.id2abspath(source, new_id)
     logging.info(new_path)
