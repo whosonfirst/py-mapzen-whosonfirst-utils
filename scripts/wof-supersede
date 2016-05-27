@@ -49,42 +49,19 @@ if __name__ == '__main__':
             sys.exit(1)
 
     source = os.path.abspath(options.source)
-    feature = mapzen.whosonfirst.utils.load([source], id)
+    old_feature = mapzen.whosonfirst.utils.load([source], id)
 
-    old_record = feature
-    new_record = copy.deepcopy(feature)
-    
-    old_props = old_record['properties']
-    new_props = new_record['properties']
+    old_feature, new_feature = mapzen.whosonfirst.utils.supersede_feature(old_feature, placetype=options.placetype)
 
-    old_id = old_props['wof:id']
-    new_id = mapzen.whosonfirst.utils.generate_id()
+    old_props = old_feature['properties']
+    new_props = new_feature['properties']
 
-    new_record['id'] = new_id
-    new_props['wof:id'] = new_id
-
-    if not old_id in new_props['wof:supersedes']:
-        new_props['wof:supersedes'].append(old_id)
-
-    if not new_id in old_props['wof:superseded_by']:
-        old_props['wof:superseded_by'].append(new_id)
-
-    now = datetime.datetime.now()
-    ymd = now.strftime("%Y-%m-%d")
-    
-    old_props['edtf:superseded'] = ymd
-
-    old_record['properties'] = old_props
-    new_record['properties'] = new_props
-
-    # we validate placetype above
-
-    if options.placetype:
-        new_props['wof:placetype'] = options.placetype
-        new_record['properties'] = new_props
+    if old_props['wof:placetype'] != new_props['wof:placetype']:
 
         admin_data = options.source	# PLEASE FIX ME
-        mapzen.whosonfirst.pip.utils.append_hierarchy_and_parent(new_record, data_root=[admin_data])
+        mapzen.whosonfirst.pip.utils.append_hierarchy_and_parent(new_feature, data_root=[admin_data])
+
+        new_props = new_feature['properties']
 
     logging.debug(pprint.pformat(old_props))
     logging.debug(pprint.pformat(new_props))
@@ -93,8 +70,10 @@ if __name__ == '__main__':
         logging.info("dry run mode is enabled, so we are not actually writing anything to disk")
     else:
         exporter = mapzen.whosonfirst.export.flatfile(source)
-        exporter.export_feature(old_record)
-        exporter.export_feature(new_record)
+        exporter.export_feature(old_feature)
+        exporter.export_feature(new_feature)
+
+    new_id = new_props['wof:id']
 
     new_path = mapzen.whosonfirst.utils.id2abspath(source, new_id)
     logging.info(new_path)

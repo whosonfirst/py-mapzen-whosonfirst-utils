@@ -12,6 +12,7 @@ import re
 import time
 import shutil
 import types
+import copy
 
 import inspect
 import sys 
@@ -592,3 +593,38 @@ def parse_filename(path):
     id, suffix = m.groups()
 
     return (id, suffix)
+
+def supersede_feature(old_feature, **kwargs):
+
+    new_feature = copy.deepcopy(old_feature)
+    
+    old_props = old_feature['properties']
+    new_props = new_feature['properties']
+
+    old_id = old_props['wof:id']
+    new_id = generate_id()
+
+    new_record['id'] = new_id
+    new_props['wof:id'] = new_id
+
+    if not old_id in new_props['wof:supersedes']:
+        new_props['wof:supersedes'].append(old_id)
+
+    if not new_id in old_props['wof:superseded_by']:
+        old_props['wof:superseded_by'].append(new_id)
+
+    now = datetime.datetime.now()
+    ymd = now.strftime("%Y-%m-%d")
+    
+    old_props['edtf:superseded'] = ymd
+
+    old_feature['properties'] = old_props
+    new_feature['properties'] = new_props
+
+    # MAYBE DON'T DO PLACETYPE HERE AT ALL ?
+
+    if kwargs.get('placetype', None)
+        new_props['wof:placetype'] = kwargs['placetype']
+        new_feature['properties'] = new_props
+
+    return old_feature, new_feature
