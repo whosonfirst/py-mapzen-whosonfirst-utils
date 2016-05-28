@@ -12,6 +12,8 @@ import re
 import time
 import shutil
 import types
+
+import datetime
 import copy
 
 import inspect
@@ -604,7 +606,6 @@ def supersede_feature(old_feature, **kwargs):
     old_id = old_props['wof:id']
     new_id = generate_id()
 
-    new_record['id'] = new_id
     new_props['wof:id'] = new_id
 
     if not old_id in new_props['wof:supersedes']:
@@ -623,7 +624,7 @@ def supersede_feature(old_feature, **kwargs):
 
     # MAYBE DON'T DO PLACETYPE HERE AT ALL ?
 
-    if kwargs.get('placetype', None)
+    if kwargs.get('placetype', None):
         new_props['wof:placetype'] = kwargs['placetype']
         new_feature['properties'] = new_props
 
