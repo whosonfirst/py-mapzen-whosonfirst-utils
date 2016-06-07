@@ -79,9 +79,14 @@ if __name__ == '__main__':
 
     for pt in placetypes:
 
+        name = pt
+
+        if options.name_template:
+            name = options.name_template % pt
+
         if not options.csv:
-            handles[pt] = sys.stdout
-            paths[pt] = None
+            handles[name] = sys.stdout
+            paths[name] = None
             continue
 
         root = os.path.abspath(options.csv)
@@ -89,7 +94,7 @@ if __name__ == '__main__':
         now = time.gmtime()
         ymd = time.strftime("%Y%m%d", now)
 
-        fname = "wof-%s-%s.csv" % (pt, ymd)
+        fname = "wof-%s-%s.csv" % (name, ymd)
         outpath = os.path.join(root, fname)
 
         # Are we writing this file for the first time? This becomes
@@ -101,18 +106,18 @@ if __name__ == '__main__':
 
         outfh = open(outpath, 'w')
 
-        handles[pt] = outfh
-        paths[pt] = outpath
+        handles[name] = outfh
+        paths[name] = outpath
     
     # now create a CSV writer for each placetype
 
-    for pt, fh in handles.items():
+    for name, fh in handles.items():
 
         fn = mapzen.whosonfirst.meta.fieldnames()
 
         writer = csv.DictWriter(fh, fieldnames=fn)
         writer.writeheader()
-        writers[pt] = writer
+        writers[name] = writer
 
     # start crawling... and remember we are crawling all the things
 
