@@ -13,6 +13,7 @@ import hashlib
 import mapzen.whosonfirst.utils
 import mapzen.whosonfirst.meta
 import mapzen.whosonfirst.placetypes
+import mapzen.whosonfirst.placetypes.utils
 
 if __name__ == '__main__':
 
@@ -24,8 +25,11 @@ if __name__ == '__main__':
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Directory to read files from')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
 
-    opt_parser.add_option('-p', '--placetypes', dest='placetypes', action='store', default=None, help='')
-    opt_parser.add_option('-r', '--roles', dest='roles', action='store', default=None, help='')
+    opt_parser.add_option('-p', '--placetypes', dest='placetypes', action='store', default=None, help='The list of placetypes to generate CSV for. Default is everything with the following roles: common, common_optional, optional')
+    # this still needs to be implemented in py-mz-wof-placetypes-utils (20160608/thisisaaronland)
+    # opt_parser.add_option('-r', '--roles', dest='roles', action='store', default=None, help='')
+    opt_parser.add_option('-i', '--ignore', dest='ignore', action='store', default=None, help='The list of placetypes to ignore when generating CSV files')
+
     opt_parser.add_option('-l', '--latest', dest='latest', action='store_true', default=False, help='Copy <PLACETYPE>-<YMD>.csv to <PLACETYPE>-latest.csv (default is False)')
     opt_parser.add_option('-n', '--name-template', dest='name_template', action='store', default=None, help='Apply this (Python string) template to each placetype in order to generate the bundle name')
 
@@ -36,41 +40,6 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-
-    #
-
-    placetypes = []
-
-    if options.placetypes:
-
-        for pt in options.placetypes.split(","):
-            pt = pt.strip()
-
-            if not mapzen.whosonfirst.placetypes.is_valid_placetype(pt):
-                logging.error("Invalid placetype (%s)" % pt)
-                sys.exit()
-
-        placetypes.append(pt)
-
-    elif options.roles:
-
-        roles = []
-
-        for rl in options.roles.split(","):
-
-            rl = rl.strip()
-
-            if not mapzen.whosonfirst.placetypes.is_valid_role(rl):
-                logging.error("Invalid role (%s)" % (rl))
-                sys.exit()
-
-            roles.append(rl)
-
-        placetypes = mapzen.whosonfirst.placetypes.with_roles(roles)        
-
-    else:
-
-        placetypes = mapzen.whosonfirst.placetypes.with_roles(('common', 'common_optional', 'optional'))
 
     #
 
@@ -113,7 +82,7 @@ if __name__ == '__main__':
 
     # first create file handles and paths for each placetype
 
-    for pt in placetypes:
+    for pt in mapzen.whosonfirst.placetypes.utils.placetypes_from_options(options):
 
         name = pt
 
@@ -144,7 +113,7 @@ if __name__ == '__main__':
 
         handles[name] = outfh
         paths[name] = outpath
-    
+
     # now create a CSV writer for each placetype
 
     for name, fh in handles.items():
