@@ -24,6 +24,7 @@ import hashlib
 
 import mapzen.whosonfirst.placetypes
 import mapzen.whosonfirst.meta
+import mapzen.whosonfirst.uri
 
 # used by the update concordances stuff so it will probably
 # be moved in to its own package shortly
@@ -89,7 +90,7 @@ def load(root, id, **kwargs):
 
         for r in root:
 
-            p = id2abspath(r, id, **kwargs)
+            p = mapzen.whosonfirst.uri.id2abspath(r, id, **kwargs)
 
             if not os.path.exists(p):
                 logging.debug("%s does not exist" % p)
@@ -108,7 +109,7 @@ def load(root, id, **kwargs):
         caller = "caller %s (%s at ln%s)" % (func, file, line)
         logging.warning("%s is invoking 'mapzen.whosonfirst.utils.load' in not-a-list context"% caller)
 
-        path = id2abspath(root, id, **kwargs)
+        path = mapzen.whosonfirst.uri.id2abspath(root, id, **kwargs)
 
     if not path or not os.path.exists(path):
         logging.error("unable to locate path for %s (%s)" % (id, root))
@@ -120,56 +121,36 @@ def load_file(path):
     fh = open(path, 'r')
     return geojson.load(fh)
 
+# DEPRECATED
+
 def id2fqpath(root, id, **kwargs):
     logging.warning("deprecated use of id2fqpath, please use id2abspath")
-    return id2abspath(root, id, **kwargs)
+
+    return mapzen.whosonfirst.uri.id2abspath(root, id, **kwargs)
+
+# DEPRECATED
 
 def id2abspath(root, id, **kwargs):
 
-    rel = id2relpath(id, **kwargs)
+    return mapzen.whosonfirst.uri.id2abspath(root, id, **kwargs)
 
-    path = os.path.join(root, rel)
-    return path
+# DEPRECATED
 
 def id2relpath(id, **kwargs):
 
-    fname = id2fname(id, **kwargs)
-    parent = id2path(id)
+    return mapzen.whosonfirst.uri.id2relpath(id, **kwargs)
 
-    path = os.path.join(parent, fname)
-    return path
+# DEPRECATED
 
 def id2fname(id, **kwargs):
 
-    # See this. It doesn't really allow for new "alternate" names
-    # to be added. For example a bespoke reverse geocoding polygon.
-    # That's not ideal but it's also by design to force us to
-    # actually think about what/how we want to do that...
-    # (20151217/thisisaaronland)
+    return mapzen.whosonfirst.uri.id2fname(id, **kwargs)
 
-    alt = kwargs.get('alt', None)
-    display = kwargs.get('display', None)
-
-    if alt:
-        return "%s-alt-%s.geojson" % (id, alt)
-    elif display:
-        return "%s-display-%s.geojson" % (id, display)
-    else:
-        return "%s.geojson" % id
+# DEPRECATED
 
 def id2path(id):
 
-    tmp = str(id)
-    parts = []
-    
-    while len(tmp) > 3:
-        parts.append(tmp[0:3])
-        tmp = tmp[3:]
-
-    if len(tmp):
-        parts.append(tmp)
-
-    return "/".join(parts)
+    return mapzen.whosonfirst.uri.id2path(id)
 
 def generate_id():
 
