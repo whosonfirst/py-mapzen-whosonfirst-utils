@@ -191,7 +191,7 @@ if __name__ == '__main__':
 
         for name, path in paths.items():
             
-            root = os.path.abspath(options.csv)
+            root = os.path.abspath(dest)
             fname = "wof-%s-latest.csv" % name
             latest_path = os.path.join(root, fname)
 
