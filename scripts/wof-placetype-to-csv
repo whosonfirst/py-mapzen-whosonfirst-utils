@@ -19,10 +19,13 @@ if __name__ == '__main__':
     import optparse
     opt_parser = optparse.OptionParser()
 
+    opt_parser.add_option('-R', '--repo', dest='repo', action='store', default=None, help='Path to a valid WOF repo - this takes precedence over options.source, options.csv and options.name-template and assumes that options.repo has both a data and a meta directory')
+
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Directory to read files from')
+    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
+
     opt_parser.add_option('-p', '--placetypes', dest='placetypes', action='store', default=None, help='')
     opt_parser.add_option('-r', '--roles', dest='roles', action='store', default=None, help='')
-    opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
     opt_parser.add_option('-l', '--latest', dest='latest', action='store_true', default=False, help='Copy <PLACETYPE>-<YMD>.csv to <PLACETYPE>-latest.csv (default is False)')
     opt_parser.add_option('-n', '--name-template', dest='name_template', action='store', default=None, help='Apply this (Python string) template to each placetype in order to generate the bundle name')
 
@@ -71,6 +74,38 @@ if __name__ == '__main__':
 
     #
 
+    src = options.source
+    dest = options.csv
+
+    name_template = options.name_template
+
+    if options.repo:
+
+        repo = os.path.abspath(options.repo)
+
+        data = os.path.join(repo, "data")
+        meta = os.path.join(repo, "meta")
+
+        for path in (data, meta):
+
+            if not os.path.exists(path):
+                logging.error("%s does not exist!" % path)
+                sys.exit(1)
+
+        src = data
+        dest = meta
+
+        repo_name = os.path.basename(repo)
+        repo_name = repo_name.replace("whosonfirst-data", "")
+        repo_name = repo_name.lstrip("-")
+
+        repo_name = repo_name.split("-")
+        repo_name[0] = "%s"
+
+        name_template = "-".join(repo_name)
+
+    #
+
     handles = {}
     writers = {}
     paths = {}
@@ -82,15 +117,15 @@ if __name__ == '__main__':
 
         name = pt
 
-        if options.name_template:
-            name = options.name_template % name
+        if name_template:
+            name = name_template % name
 
-        if not options.csv:
+        if not dest:
             handles[name] = sys.stdout
             paths[name] = None
             continue
 
-        root = os.path.abspath(options.csv)
+        root = os.path.abspath(dest)
 
         now = time.gmtime()
         ymd = time.strftime("%Y%m%d", now)
@@ -122,7 +157,7 @@ if __name__ == '__main__':
 
     # start crawling... and remember we are crawling all the things
 
-    source = os.path.abspath(options.source)
+    source = os.path.abspath(src)
     crawl = mapzen.whosonfirst.utils.crawl(source)
 
     meta_kwargs = {
@@ -135,8 +170,8 @@ if __name__ == '__main__':
         out = mapzen.whosonfirst.meta.dump_file(path, **meta_kwargs)
         name = out['placetype']
 
-        if options.name_template:
-            name = options.name_template % name
+        if name_template:
+            name = name_template % name
 
         writer = writers.get(name, None)
 
