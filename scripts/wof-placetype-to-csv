@@ -24,6 +24,7 @@ if __name__ == '__main__':
     opt_parser.add_option('-r', '--roles', dest='roles', action='store', default=None, help='')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
     opt_parser.add_option('-l', '--latest', dest='latest', action='store_true', default=False, help='Copy <PLACETYPE>-<YMD>.csv to <PLACETYPE>-latest.csv (default is False)')
+    opt_parser.add_option('-n', '--name-template', dest='name_template', action='store', default=None, help='Apply this (Python string) template to each placetype in order to generate the bundle name')
 
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     options, args = opt_parser.parse_args()
@@ -82,7 +83,7 @@ if __name__ == '__main__':
         name = pt
 
         if options.name_template:
-            name = options.name_template % pt
+            name = options.name_template % name
 
         if not options.csv:
             handles[name] = sys.stdout
@@ -132,9 +133,12 @@ if __name__ == '__main__':
     for path in crawl:
 
         out = mapzen.whosonfirst.meta.dump_file(path, **meta_kwargs)
-        placetype = out['placetype']
+        name = out['placetype']
 
-        writer = writers.get(placetype, None)
+        if options.name_template:
+            name = options.name_template % name
+
+        writer = writers.get(name, None)
 
         if not writer:
 
@@ -150,10 +154,10 @@ if __name__ == '__main__':
 
     if options.latest:
 
-        for pt, path in paths.items():
+        for name, path in paths.items():
             
             root = os.path.abspath(options.csv)
-            fname = "wof-%s-latest.csv" % pt
+            fname = "wof-%s-latest.csv" % name
             latest_path = os.path.join(root, fname)
 
             is_new = True
