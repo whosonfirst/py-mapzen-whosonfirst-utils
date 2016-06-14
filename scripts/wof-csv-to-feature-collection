@@ -7,6 +7,7 @@ import csv
 import pprint
 import geojson
 
+import mapzen.whosonfirst.uri
 import mapzen.whosonfirst.utils
 
 import requests
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     import optparse
     opt_parser = optparse.OptionParser()
 
-    opt_parser.add_option('-s', '--source', dest='source', action='store', default='fs', help='Where to read files from (default is "fs")')
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default='fs', help='Where to read files from (default is "fs")')    
     opt_parser.add_option('-p', '--prefix', dest='prefix', action='store', default=None, help='Prefix for paths in CSV file (optional)')
     opt_parser.add_option('-m', '--max', dest='max', action='store', default=None, help='The maximum number of records in asingle GeoJSON file')
     opt_parser.add_option('-l', '--slim', dest='slim', action='store_true', default=False, help='Limit property export to subset (roughly those in the CSV file), reduce file size.')
@@ -28,6 +29,8 @@ if __name__ == '__main__':
     opt_parser.add_option('-t', '--slim-placetype', dest='placetype', action='store', default=None, help='Add additional neighbourhood keys.')
     opt_parser.add_option('-f', '--slim-filter-belongs-to', dest='place_filter', action='store', default=None, help='Limit to a WOF hierarchy.')
 
+    opt_parser.add_option('-i', '--infer-path', dest='infer_path', action='store_true', default=False, help='Infer (relative) from wof:id column (takes precedence over any pre-exisinting path column)')
+        
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
     opt_parser.add_option('-o', '--out', dest='out', action='store', default=None, help='Where to write feature collection (default is STDOUT)')
 
@@ -166,20 +169,21 @@ if __name__ == '__main__':
 
         path = row.get('path', None)
 
-        # start of path kludge
-        # add logic here for concordance files that only have wof:id for
-        # dealing with venues which only have concordance CSVs
-        
-        if path == None:
-            wof_id = row.get('wof:id', None)
+        if options.infer_path:
             
-            if wof_id == None:
-                logging.error( 'omgwft' )
-                sys.exit()
+                wof_id = row.get('wof:id', None)
                 
-            path = mapzen.whosonfirst.utils.id2relpath( wof_id )
-        
-        # end of path kludge
+                if wof_id == None:
+                    logging.error("missing wof:id column... how can --infer-path work... no, I mean really?")
+                    sys.exit(1)
+                    
+                path = mapzen.whosonfirst.uri.id2relpath( wof_id )
+
+        else:
+
+            if not path or path == '':
+                logging.error("missing path column, perhaps you want to run this script with --infer-path ?")
+                sys.exit(1)
 
         if options.prefix:
             path = os.path.join(options.prefix, path)
