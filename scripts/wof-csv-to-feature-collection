@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     options, args = opt_parser.parse_args()
 
-    if options.verbose:    
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -50,10 +50,12 @@ if __name__ == '__main__':
         max_records = int(options.max)
         max_records = max(0, max_records)
 
-    logging.debug("max records per geojson file: %s" % max_records)        
+    logging.debug("max records per geojson file: %s" % max_records)
 
-    wof_slim_key_lookup = { 
+    wof_slim_key_lookup = {
         'name':'wof:name',
+        'eng_preferred_name':'name:eng_x_preferred',
+        'eng_variant_name':'name:eng_x_variant',
         'id':'wof:id',
         'placetype':'wof:placetype',
         'placetype':'wof:placetype',
@@ -111,21 +113,23 @@ if __name__ == '__main__':
         'province':'sg:province',
         'tags':'sg:tags'
     }
-    
+
     slim_keys = []
-    
+
     if options.keys:
         slim_keys = options.keys.split(',')
     else:
         if options.keys_template:
             if options.keys_template == 'shapefile':
                 slim_keys = ['name','id','placetype','parent','country','region','locality','wof_a3','lbl_lat','lbl_long']
+            elif options.keys_template == 'external_editor':
+                slim_keys = ['name','id','placetype','parent_id','is_landuse_aoi','supersedes','superseded_by','deprecated','eng_preferred_name','eng_variant_name', 'max_zoom','min_zoom','lbl_latitude','lbl_longitude','is_funky','is_hard_boundary','is_official','tier_locality','country_id','region_id','locality_id','wof_country']
             elif options.keys_template == 'more':
                 slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','iso_country','lbl_latitude','lbl_longitude','inception','cessation','deprecated','supersedes','superseded_by','lastmodified','source']
         else:
             slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','lbl_latitude','lbl_longitude']
-        
-        if options.placetype == 'neighbourhood':
+
+        if options.placetype == 'neighbourhood' and options.keys_template != 'external_editor':
             if options.keys_template == 'shapefile':
                 slim_keys.extend( ['is_funky','is_hard','is_aoi','is_offic','max_zoom','min_zoom','tier_local'] )
             else:
@@ -151,7 +155,7 @@ if __name__ == '__main__':
 
         for ln in fh.readlines():
             lines += 1
-            
+
             if lines == (max_records + 1):
                 break
 
@@ -169,16 +173,16 @@ if __name__ == '__main__':
         # start of path kludge
         # add logic here for concordance files that only have wof:id for
         # dealing with venues which only have concordance CSVs
-        
+
         if path == None:
             wof_id = row.get('wof:id', None)
-            
+
             if wof_id == None:
                 logging.error( 'omgwft' )
                 sys.exit()
-                
+
             path = mapzen.whosonfirst.utils.id2relpath( wof_id )
-        
+
         # end of path kludge
 
         if options.prefix:
@@ -189,7 +193,7 @@ if __name__ == '__main__':
         fdata = None
 
         if options.source == 's3':
-            
+
             try:
                 rsp = requests.get(path)
             except Exception, e:
@@ -227,7 +231,7 @@ if __name__ == '__main__':
 
                 outpath = options.out
                 outpath = os.path.abspath(outpath)
-                
+
                 if max_records:
 
                     root = os.path.dirname(outpath)
@@ -254,13 +258,13 @@ if __name__ == '__main__':
         if options.slim:
             data = geojson.load(fdata)
             props = data['properties']
-            
+
             if options.place_filter:
                 filter = int( options.place_filter )
-                
+
                 if not filter in props[ "wof:belongsto" ]:
                     continue
-            
+
             if first == True:
                 first = False
             else:
