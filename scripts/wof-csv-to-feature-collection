@@ -6,7 +6,9 @@ import os.path
 import csv
 import pprint
 import geojson
+import json
 
+import mapzen.whosonfirst.uri
 import mapzen.whosonfirst.utils
 
 import requests
@@ -28,8 +30,11 @@ if __name__ == '__main__':
     opt_parser.add_option('-t', '--slim-placetype', dest='placetype', action='store', default=None, help='Add additional neighbourhood keys.')
     opt_parser.add_option('-f', '--slim-filter-belongs-to', dest='place_filter', action='store', default=None, help='Limit to a WOF hierarchy.')
 
+    opt_parser.add_option('-i', '--infer-path', dest='infer_path', action='store_true', default=False, help='Infer (relative) from wof:id column (takes precedence over any pre-exisinting path column)')
+
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='CSV file to read')
     opt_parser.add_option('-o', '--out', dest='out', action='store', default=None, help='Where to write feature collection (default is STDOUT)')
+    opt_parser.add_option('-a', '--aliases', dest='aliases_path', action='store', default=None, help='Path to property aliases JSON for slim mode')
 
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
 
@@ -52,67 +57,41 @@ if __name__ == '__main__':
 
     logging.debug("max records per geojson file: %s" % max_records)
 
-    wof_slim_key_lookup = {
-        'name':'wof:name',
-        'eng_preferred_name':'name:eng_x_preferred',
-        'eng_variant_name':'name:eng_x_variant',
-        'id':'wof:id',
-        'placetype':'wof:placetype',
-        'placetype':'wof:placetype',
-        'parent_id':'wof:parent_id',
-        'parent':'wof:parent_id',
-        'country_id':'wof:hierarchy[0]["country_id"]',
-        'country':'wof:hierarchy[0]["country_id"]',
-        'region_id':'wof:hierarchy[0]["region_id"]',
-        'region':'wof:hierarchy[0]["region_id"]',
-        'locality_id':'wof:hierarchy[0]["locality_id"]',
-        'locality':'wof:hierarchy[0]["locality_id"]',
-        'wof_country':'wof:country',
-        'wof_a3':'wof:country',
-        'iso_country':'iso:country',
-        'iso_a3':'iso:country',
-        'lbl_latitude':'lbl:latitude',
-        'lbl_lat':'lbl:latitude',
-        'lbl_longitude':'lbl:longitude',
-        'lbl_long':'lbl:longitude',
-        'inception':'edtf:inception',
-        'incept':'edtf:inception',
-        'cessation':'edtf:cessation',
-        'cessat':'edtf:cessation',
-        'deprecated':'edtf:deprecated',
-        'deprec':'edtf:deprecated',
-        'supersedes':'wof:supersedes[0]',
-        'super':'wof:supersedes[0]',
-        'superseded_by':'wof:superseded_by[0]',
-        'super_by':'wof:superseded_by[0]',
-        'lastmodified':'wof:lastmodified',
-        'lastmod':'wof:lastmodified',
-        'source':'src:geom',
-        'is_funky':'mz:is_funky',
-        'is_hard_boundary':'mz:is_hard_boundary',
-        'is_hard':'mz:is_hard_boundary',
-        'is_landuse_aoi':'mz:is_landuse_aoi',
-        'is_aoi':'mz:is_landuse_aoi',
-        'is_official':'mz:is_official',
-        'is_offic':'mz:is_official',
-        'max_zoom':'mz:max_zoom',
-        'min_zoom':'mz:min_zoom',
-        'tier_locality':'mz:tier_locality',
-        'tier_local':'mz:tier_locality',
-        'address':'sg:address',
-        'city':'sg:city',
-        'classifiers_cat':'sg:classifiers["category"]',
-        'classifiers_subcat':'sg:classifiers["subcategory"]',
-        'classifiers_type':'sg:classifiers["type"]',
-        'cl_cat':'sg:classifiers["category"]',
-        'cl_subcat':'sg:classifiers["subcategory"]',
-        'cl_type':'sg:classifiers["type"]',
-        'owner':'sg:owner',
-        'phone':'sg:phone',
-        'postcode':'sg:postcode',
-        'province':'sg:province',
-        'tags':'sg:tags'
-    }
+
+    if options.slim:
+
+        # Default to a reasonable path, in the absence of an alias argument
+        path = "/usr/local/mapzen/whosonfirst-properties/aliases/property_aliases.json"
+
+        if options.aliases_path:
+            path = options.aliases_path
+        try:
+            if not os.path.exists(path):
+                logging.error("%s does not exist, but required for slim mode" % path)
+                sys.exit()
+            fdata = open(path, 'r')
+            property_aliases = json.load(fdata)
+        except Exception, e:
+            logging.error("could not load %s, because %s" % (path, e))
+            sys.exit()
+
+        # Add complex property aliases
+        property_aliases['country_id'] = 'wof:hierarchy[0]["country_id"]'
+        property_aliases['country'] = 'wof:hierarchy[0]["country_id"]'
+        property_aliases['region_id'] = 'wof:hierarchy[0]["region_id"]'
+        property_aliases['region'] = 'wof:hierarchy[0]["region_id"]'
+        property_aliases['locality_id'] = 'wof:hierarchy[0]["locality_id"]'
+        property_aliases['locality'] = 'wof:hierarchy[0]["locality_id"]'
+        property_aliases['supersedes'] = 'wof:supersedes[0]'
+        property_aliases['super'] = 'wof:supersedes[0]'
+        property_aliases['superseded_by'] = 'wof:superseded_by[0]'
+        property_aliases['super_by'] = 'wof:superseded_by[0]'
+        property_aliases['classifiers_cat'] = 'sg:classifiers["category"]'
+        property_aliases['classifiers_subcat'] = 'sg:classifiers["subcategory"]'
+        property_aliases['classifiers_type'] = 'sg:classifiers["type"]'
+        property_aliases['cl_cat'] = 'sg:classifiers["category"]'
+        property_aliases['cl_subcat'] = 'sg:classifiers["subcategory"]'
+        property_aliases['cl_type'] = 'sg:classifiers["type"]'
 
     slim_keys = []
 
@@ -170,20 +149,21 @@ if __name__ == '__main__':
 
         path = row.get('path', None)
 
-        # start of path kludge
-        # add logic here for concordance files that only have wof:id for
-        # dealing with venues which only have concordance CSVs
+        if options.infer_path:
 
-        if path == None:
-            wof_id = row.get('wof:id', None)
+                wof_id = row.get('wof:id', None)
 
-            if wof_id == None:
-                logging.error( 'omgwft' )
-                sys.exit()
+                if wof_id == None:
+                    logging.error("missing wof:id column... how can --infer-path work... no, I mean really?")
+                    sys.exit(1)
 
-            path = mapzen.whosonfirst.utils.id2relpath( wof_id )
+                path = mapzen.whosonfirst.uri.id2relpath( wof_id )
 
-        # end of path kludge
+        else:
+
+            if not path or path == '':
+                logging.error("missing path column, perhaps you want to run this script with --infer-path ?")
+                sys.exit(1)
 
         if options.prefix:
             path = os.path.join(options.prefix, path)
@@ -275,7 +255,7 @@ if __name__ == '__main__':
             fresh_props = {}
             for key in slim_keys:
                 try:
-                    # if there are nested props, it only gets the first one, see wof_slim_key_lookup logic above
+                    # if there are nested props, it only gets the first one, see property_aliases logic above
                     if key in ('country_id', 'region_id', 'locality_id'):
                         fresh_props.update( { key: props["wof:hierarchy"][0][ key ] } )
                     elif key in ('country', 'region', 'locality'):
@@ -288,9 +268,9 @@ if __name__ == '__main__':
                     elif key in ('classifiers_type', 'cl_type'):
                         fresh_props.update( { key: props["sg:classifiers"][0]["type"] } )
                     else:
-                        fresh_props.update( { key: props[ wof_slim_key_lookup[key] ] } )
+                        fresh_props.update( { key: props[ property_aliases[key] ] } )
                 except:
-                    logging.debug("\tmissing key: %s for %s" % (key, wof_slim_key_lookup[key]))
+                    logging.debug("\tmissing key: %s for %s" % (key, property_aliases[key]))
                     fresh_props.update( { key: -1 } )
             #print fresh_props
             # this won't be an ordered list, sadly

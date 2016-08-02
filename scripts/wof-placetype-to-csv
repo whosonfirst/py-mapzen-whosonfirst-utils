@@ -13,17 +13,25 @@ import hashlib
 import mapzen.whosonfirst.utils
 import mapzen.whosonfirst.meta
 import mapzen.whosonfirst.placetypes
+import mapzen.whosonfirst.placetypes.utils
 
 if __name__ == '__main__':
 
     import optparse
     opt_parser = optparse.OptionParser()
 
+    opt_parser.add_option('-R', '--repo', dest='repo', action='store', default=None, help='Path to a valid WOF repo - this takes precedence over options.source, options.csv and options.name-template and assumes that options.repo has both a data and a meta directory')
+
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Directory to read files from')
-    opt_parser.add_option('-p', '--placetypes', dest='placetypes', action='store', default=None, help='')
-    opt_parser.add_option('-r', '--roles', dest='roles', action='store', default=None, help='')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
+
+    opt_parser.add_option('-p', '--placetypes', dest='placetypes', action='store', default=None, help='The list of placetypes to generate CSV for. Default is everything with the following roles: common, common_optional, optional')
+    # this still needs to be implemented in py-mz-wof-placetypes-utils (20160608/thisisaaronland)
+    # opt_parser.add_option('-r', '--roles', dest='roles', action='store', default=None, help='')
+    opt_parser.add_option('-i', '--ignore', dest='ignore', action='store', default=None, help='The list of placetypes to ignore when generating CSV files')
+
     opt_parser.add_option('-l', '--latest', dest='latest', action='store_true', default=False, help='Copy <PLACETYPE>-<YMD>.csv to <PLACETYPE>-latest.csv (default is False)')
+    opt_parser.add_option('-n', '--name-template', dest='name_template', action='store', default=None, help='Apply this (Python string) template to each placetype in order to generate the bundle name')
 
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     options, args = opt_parser.parse_args()
@@ -35,38 +43,35 @@ if __name__ == '__main__':
 
     #
 
-    placetypes = []
+    src = options.source
+    dest = options.csv
 
-    if options.placetypes:
+    name_template = options.name_template
 
-        for pt in options.placetypes.split(","):
-            pt = pt.strip()
+    if options.repo:
 
-            if not mapzen.whosonfirst.placetypes.is_valid_placetype(pt):
-                logging.error("Invalid placetype (%s)" % pt)
-                sys.exit()
+        repo = os.path.abspath(options.repo)
 
-        placetypes.append(pt)
+        data = os.path.join(repo, "data")
+        meta = os.path.join(repo, "meta")
 
-    elif options.roles:
+        for path in (data, meta):
 
-        roles = []
+            if not os.path.exists(path):
+                logging.error("%s does not exist!" % path)
+                sys.exit(1)
 
-        for rl in options.roles.split(","):
+        src = data
+        dest = meta
 
-            rl = rl.strip()
+        repo_name = os.path.basename(repo)
+        repo_name = repo_name.replace("whosonfirst-data", "")
+        repo_name = repo_name.lstrip("-")
 
-            if not mapzen.whosonfirst.placetypes.is_valid_role(rl):
-                logging.error("Invalid role (%s)" % (rl))
-                sys.exit()
+        repo_name = repo_name.split("-")
+        repo_name[0] = "%s"
 
-            roles.append(rl)
-
-        placetypes = mapzen.whosonfirst.placetypes.with_roles(roles)        
-
-    else:
-
-        placetypes = mapzen.whosonfirst.placetypes.with_roles(('common', 'common_optional', 'optional'))
+        name_template = "-".join(repo_name)
 
     #
 
@@ -77,19 +82,24 @@ if __name__ == '__main__':
 
     # first create file handles and paths for each placetype
 
-    for pt in placetypes:
+    for pt in mapzen.whosonfirst.placetypes.utils.placetypes_from_options(options):
 
-        if not options.csv:
-            handles[pt] = sys.stdout
-            paths[pt] = None
+        name = pt
+
+        if name_template:
+            name = name_template % name
+
+        if not dest:
+            handles[name] = sys.stdout
+            paths[name] = None
             continue
 
-        root = os.path.abspath(options.csv)
+        root = os.path.abspath(dest)
 
         now = time.gmtime()
         ymd = time.strftime("%Y%m%d", now)
 
-        fname = "wof-%s-%s.csv" % (pt, ymd)
+        fname = "wof-%s-%s.csv" % (name, ymd)
         outpath = os.path.join(root, fname)
 
         # Are we writing this file for the first time? This becomes
@@ -101,22 +111,22 @@ if __name__ == '__main__':
 
         outfh = open(outpath, 'w')
 
-        handles[pt] = outfh
-        paths[pt] = outpath
-    
+        handles[name] = outfh
+        paths[name] = outpath
+
     # now create a CSV writer for each placetype
 
-    for pt, fh in handles.items():
+    for name, fh in handles.items():
 
         fn = mapzen.whosonfirst.meta.fieldnames()
 
         writer = csv.DictWriter(fh, fieldnames=fn)
         writer.writeheader()
-        writers[pt] = writer
+        writers[name] = writer
 
     # start crawling... and remember we are crawling all the things
 
-    source = os.path.abspath(options.source)
+    source = os.path.abspath(src)
     crawl = mapzen.whosonfirst.utils.crawl(source)
 
     meta_kwargs = {
@@ -127,9 +137,12 @@ if __name__ == '__main__':
     for path in crawl:
 
         out = mapzen.whosonfirst.meta.dump_file(path, **meta_kwargs)
-        placetype = out['placetype']
+        name = out['placetype']
 
-        writer = writers.get(placetype, None)
+        if name_template:
+            name = name_template % name
+
+        writer = writers.get(name, None)
 
         if not writer:
 
@@ -145,10 +158,10 @@ if __name__ == '__main__':
 
     if options.latest:
 
-        for pt, path in paths.items():
+        for name, path in paths.items():
             
-            root = os.path.abspath(options.csv)
-            fname = "wof-%s-latest.csv" % pt
+            root = os.path.abspath(dest)
+            fname = "wof-%s-latest.csv" % name
             latest_path = os.path.join(root, fname)
 
             is_new = True
