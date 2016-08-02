@@ -57,7 +57,6 @@ if __name__ == '__main__':
 
     logging.debug("max records per geojson file: %s" % max_records)
 
-
     if options.slim:
 
         # Default to a reasonable path, in the absence of an alias argument
