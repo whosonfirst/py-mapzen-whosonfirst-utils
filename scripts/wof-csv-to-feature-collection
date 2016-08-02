@@ -100,12 +100,14 @@ if __name__ == '__main__':
         if options.keys_template:
             if options.keys_template == 'shapefile':
                 slim_keys = ['name','id','placetype','parent','country','region','locality','wof_a3','lbl_lat','lbl_long']
+            elif options.keys_template == 'external_editor':
+                slim_keys = ['name','id','placetype','parent_id','is_landuse_aoi','supersedes','superseded_by','deprecated','eng_preferred_name','eng_variant_name', 'max_zoom','min_zoom','lbl_latitude','lbl_longitude','is_funky','is_hard_boundary','is_official','tier_locality','country_id','region_id','locality_id','wof_country']
             elif options.keys_template == 'more':
                 slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','iso_country','lbl_latitude','lbl_longitude','inception','cessation','deprecated','supersedes','superseded_by','lastmodified','source']
         else:
             slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','lbl_latitude','lbl_longitude']
 
-        if options.placetype == 'neighbourhood':
+        if options.placetype == 'neighbourhood' and options.keys_template != 'external_editor':
             if options.keys_template == 'shapefile':
                 slim_keys.extend( ['is_funky','is_hard','is_aoi','is_offic','max_zoom','min_zoom','tier_local'] )
             else:
