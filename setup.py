@@ -27,7 +27,7 @@ setup(
     install_requires=[
         'mapzen.whosonfirst.placetypes>=0.11',
         'mapzen.whosonfirst.placetypes.utils>=0.01',
-        'mapzen.whosonfirst.meta>=0.8',
+        'mapzen.whosonfirst.meta>=0.12',
         'mapzen.whosonfirst.uri>=0.1',
         'requests',
         'shapely',
@@ -38,7 +38,7 @@ setup(
     dependency_links=[
         'https://github.com/whosonfirst/py-mapzen-whosonfirst-placetypes/tarball/master#egg=mapzen.whosonfirst.placetypes-0.11',
         'https://github.com/whosonfirst/py-mapzen-whosonfirst-placetypes-utils/tarball/master#egg=mapzen.whosonfirst.placetypes.utils-0.01',
-        'https://github.com/whosonfirst/py-mapzen-whosonfirst-meta/tarball/master#egg=mapzen.whosonfirst.meta-0.8',
+        'https://github.com/whosonfirst/py-mapzen-whosonfirst-meta/tarball/master#egg=mapzen.whosonfirst.meta-0.12',
         'https://github.com/whosonfirst/py-mapzen-whosonfirst-uri/tarball/master#egg=mapzen.whosonfirst.uri-0.1',
         ],
     packages=packages,

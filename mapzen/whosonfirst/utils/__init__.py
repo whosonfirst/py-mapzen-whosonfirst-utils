@@ -107,7 +107,7 @@ def load(root, id, **kwargs):
         func = stack[3]
 
         caller = "caller %s (%s at ln%s)" % (func, file, line)
-        logging.warning("%s is invoking 'mapzen.whosonfirst.utils.load' in not-a-list context"% caller)
+        logging.debug("%s is invoking 'mapzen.whosonfirst.utils.load' in not-a-list context"% caller)
 
         path = mapzen.whosonfirst.uri.id2abspath(root, id, **kwargs)
 
@@ -506,8 +506,15 @@ def update_placetype_metafiles(meta, updated, **kwargs):
         feature = load_file(path)
         props = feature['properties']
 
-        placetype = props['wof:placetype']
-        
+        placetype = props.get('wof:placetype', None)
+
+        if not placetype:
+
+            e = "%s is missing a placetype!" % path
+
+            logging.error(e)
+            raise Exception, e
+
         to_process = to_rebuild.get(placetype, [])
         to_process.append(path)
 
@@ -602,8 +609,6 @@ def supersede_feature(old_feature, **kwargs):
 
     old_feature['properties'] = old_props
     new_feature['properties'] = new_props
-
-    # MAYBE DON'T DO PLACETYPE HERE AT ALL ?
 
     if kwargs.get('placetype', None):
         new_props['wof:placetype'] = kwargs['placetype']
