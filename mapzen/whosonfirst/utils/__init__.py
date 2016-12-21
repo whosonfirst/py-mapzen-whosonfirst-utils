@@ -483,6 +483,8 @@ def __update_concordances(source, dest, to_process, **kwargs):
 # so that it can be invoked from both a CLI tool and from a git pre-commit hook
 # (20151111/thisisaaronland)
 
+# PLEASE MOVE ME OUT OF py-mz-wof-utils (20161221/thisisaaronland)
+
 def update_placetype_metafiles(meta, updated, **kwargs):
 
     modified = []
@@ -529,6 +531,14 @@ def update_placetype_metafiles(meta, updated, **kwargs):
             logging.info("rebuild meta file for placetype %s with one update" % placetype)
         else:
             logging.info("rebuild meta file for placetype %s with %s updates" % (placetype, count))
+
+        root = os.path.dirname(meta)
+
+        fname = os.path.basename(root)
+        fname = fname.split("-")
+
+        if len(fname) > 2:
+            placetype = "-".join(fname[2:])
 
         fname_ymd = "wof-%s-%s.csv" % (placetype, ymd)
         fname_latest = "wof-%s-latest.csv" % placetype
