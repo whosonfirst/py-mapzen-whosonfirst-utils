@@ -392,9 +392,6 @@ def update_concordances_metafile(meta, to_process, **kwargs):
 
         if hash_ymd == hash_latest:
 
-            logging.info("%s is the same as %s, so pruning" % (path_ymd, path_latest))
-            os.unlink(path_latest)
-
             created = []
             modified = []
 
