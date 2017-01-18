@@ -341,8 +341,18 @@ def update_concordances_metafile(meta, to_process, **kwargs):
     now = time.gmtime()
     ymd = time.strftime("%Y%m%d", now)
 
-    fname_ymd = "wof-concordances-%s.csv" % ymd
-    fname_latest = "wof-concordances-latest.csv"
+    # sudo put me in a function (20170118/thisisaaronland)
+    
+    root = os.path.dirname(meta)
+
+    fname = os.path.basename(root)
+    fname = fname.split("-")
+
+    if len(fname) > 2:
+        placetype = "-".join(fname[2:])
+
+    fname_ymd = "wof-%s-concordances-%s.csv" % (placetype, ymd)
+    fname_latest = "wof-%s-concordances-latest.csv" % placetype
 
     path_ymd = os.path.join(meta, fname_ymd)
     path_latest = os.path.join(meta, fname_latest)
@@ -528,6 +538,8 @@ def update_placetype_metafiles(meta, updated, **kwargs):
             logging.info("rebuild meta file for placetype %s with one update" % placetype)
         else:
             logging.info("rebuild meta file for placetype %s with %s updates" % (placetype, count))
+
+        # sudo put me in a function (20170118/thisisaaronland)
 
         root = os.path.dirname(meta)
 
