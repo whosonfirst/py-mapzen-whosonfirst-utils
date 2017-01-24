@@ -348,11 +348,15 @@ def update_concordances_metafile(meta, to_process, **kwargs):
     fname = os.path.basename(root)
     fname = fname.split("-")
 
+    fname_ymd = "wof-concordances-%s.csv" % ymd
+    fname_latest = "wof-concordances-latest.csv"
+    
     if len(fname) > 2:
+        
         placetype = "-".join(fname[2:])
-
-    fname_ymd = "wof-%s-concordances-%s.csv" % (placetype, ymd)
-    fname_latest = "wof-%s-concordances-latest.csv" % placetype
+        
+        fname_ymd = "wof-%s-concordances-%s.csv" % (placetype, ymd)
+        fname_latest = "wof-%s-concordances-latest.csv" % placetype
 
     path_ymd = os.path.join(meta, fname_ymd)
     path_latest = os.path.join(meta, fname_latest)
