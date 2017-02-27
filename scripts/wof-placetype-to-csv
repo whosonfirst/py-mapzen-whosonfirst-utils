@@ -137,23 +137,45 @@ if __name__ == '__main__':
     for path in crawl:
 
         out = mapzen.whosonfirst.meta.dump_file(path, **meta_kwargs)
-        name = out['placetype']
 
-        # something something something out['placetype_alt'] here...
+        # this is an artifact of the way we used to do things bumping
+        # up against the way we do things now – specifically we need
+        # to update the crawl code to inflate features and to invoke
+        # mz.wof.meta.dump_feature which still needs to be written...
+        # (20170227/thisisaaronland)
 
-        if name_template:
-            name = name_template % name
+        feature = mapzen.whosonfirst.utils.load_file(path)
+        props = feature["properties"]
 
-        writer = writers.get(name, None)
+        # because this (it's long because it's complex because place)
+        # https://github.com/whosonfirst-data/whosonfirst-data/issues/538
 
-        if not writer:
+        placetype = props["wof:placetype"]        
+        possible = [ placetype ]
 
-            if not options.placetypes:
-                logging.error("Missing a filehandle for writing records of placetype %s (%s), perhaps you need to update your copy of mapzen.whosonfirst.placetypes" % (placetype, path))
+        alt = props.get("wof:placetype_alt", [])
+        possible.extend(alt)
 
-            continue
+        for pt in possible :
 
-        writer.writerow(out)
+            name = pt
+
+            if name_template:
+                name = name_template % name
+
+            writer = writers.get(name, None)
+
+            if not writer:
+
+                if not options.placetypes:
+                    logging.error("Missing a filehandle for writing records of placetype %s (%s), perhaps you need to update your copy of mapzen.whosonfirst.placetypes" % (pt, path))
+
+                    continue
+
+            out["placetype"] = pt
+            writer.writerow(out)
+
+    #
 
     for ignore, fh in handles.items():
         fh.close()
