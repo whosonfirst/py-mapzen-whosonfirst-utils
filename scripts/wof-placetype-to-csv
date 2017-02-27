@@ -139,6 +139,8 @@ if __name__ == '__main__':
         out = mapzen.whosonfirst.meta.dump_file(path, **meta_kwargs)
         name = out['placetype']
 
+        # something something something out['placetype_alt'] here...
+
         if name_template:
             name = name_template % name
 
