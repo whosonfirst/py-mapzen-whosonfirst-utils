@@ -139,7 +139,7 @@ if __name__ == '__main__':
         out = mapzen.whosonfirst.meta.dump_file(path, **meta_kwargs)
 
         # this is an artifact of the way we used to do things bumping
-        # up against the way we do things now – specifically we need
+        # up against the way we do things now - specifically we need
         # to update the crawl code to inflate features and to invoke
         # mz.wof.meta.dump_feature which still needs to be written...
         # (20170227/thisisaaronland)
