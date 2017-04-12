@@ -35,7 +35,12 @@ pat_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
 def hash_geom(f):
 
     geom = f['geometry']
-    geom = json.dumps(geom)
+
+    # see this? the part where we sort keys are remove any extra
+    # whitespace? yeah, that's important. because this:
+    # https://github.com/whosonfirst/go-whosonfirst-meta/issues/1#issuecomment-293699076
+
+    geom = json.dumps(geom, sort_keys=True, separators=(',', ':'))
     
     hash = hashlib.md5()
     hash.update(geom)
