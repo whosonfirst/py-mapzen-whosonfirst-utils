@@ -113,13 +113,32 @@ def load(root, id, **kwargs):
 
         path = mapzen.whosonfirst.uri.id2abspath(root, id, **kwargs)
 
+    if path.startswith("http"):
+
+        return load_remote(path)
+
+    elif path.startswith("file://"):
+
+        path = path.replace("file://", "")
+        return load_file(path)
+
+    else:
+
+        return load_file(path)
+
+def load_remote(uri):
+
+    # TODO : add local caching
+
+    rsp = requests.get(uri)
+    return geojson.loads(rsp.content)
+
+def load_file(path):
+
     if not path or not os.path.exists(path):
         logging.error("unable to locate path for %s (%s)" % (id, root))
         raise Exception, "unable to locate path for %s (%s)" % (id, root)
 
-    return load_file(path)
-
-def load_file(path):
     fh = open(path, 'r')
     return geojson.load(fh)
 
