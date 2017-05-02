@@ -32,6 +32,31 @@ import csv
 # used in parse_filename
 pat_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
 
+def reverse_geocoordinates(feature):
+
+    props = feature['properties']
+
+    lat = props.get('reversegeo:latitude', None)
+    lon = props.get('reversegeo:longitude', None)
+
+    if not lat or not lon:
+        lat = props.get('lbl:latitude', None)
+        lon = props.get('lbl:longitude', None)
+
+    if not lat or not lon:
+        lat = props.get('geom:latitude', None)
+        lon = props.get('geom:longitude', None)
+
+    if not lat or not lon:
+
+        shp = shapely.geometry.asShape(feature['geometry'])
+        coords = shp.centroid
+
+        lat = coords.y
+        lon = coords.x
+
+    return lat, lon
+
 def hash_geom(f):
 
     geom = f['geometry']
