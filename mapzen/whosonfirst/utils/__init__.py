@@ -161,8 +161,8 @@ def load_remote(uri):
 def load_file(path):
 
     if not path or not os.path.exists(path):
-        logging.error("unable to locate path for %s (%s)" % (id, root))
-        raise Exception, "unable to locate path for %s (%s)" % (id, root)
+        logging.error("unable to locate path %s" % path)
+        raise Exception, "unable to locate path %s" % path
 
     fh = open(path, 'r')
     return geojson.load(fh)
