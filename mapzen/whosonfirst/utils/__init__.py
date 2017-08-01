@@ -134,7 +134,7 @@ def load(root, id, **kwargs):
         func = stack[3]
 
         caller = "caller %s (%s at ln%s)" % (func, file, line)
-        logging.debug("%s is invoking 'mapzen.whosonfirst.utils.load' in not-a-list context"% caller)
+        # logging.debug("%s is invoking 'mapzen.whosonfirst.utils.load' in not-a-list context"% caller)
 
         path = mapzen.whosonfirst.uri.id2abspath(root, id, **kwargs)
 
