@@ -1,6 +1,3 @@
-# https://pythonhosted.org/setuptools/setuptools.html#namespace-packages
-__import__('pkg_resources').declare_namespace(__name__)
-
 import shapely.geometry
 import requests
 import geojson
@@ -35,10 +32,40 @@ import csv
 # used in parse_filename
 pat_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
 
+def reverse_geocoordinates(feature):
+
+    props = feature['properties']
+
+    lat = props.get('reversegeo:latitude', None)
+    lon = props.get('reversegeo:longitude', None)
+
+    if not lat or not lon:
+        lat = props.get('lbl:latitude', None)
+        lon = props.get('lbl:longitude', None)
+
+    if not lat or not lon:
+        lat = props.get('geom:latitude', None)
+        lon = props.get('geom:longitude', None)
+
+    if not lat or not lon:
+
+        shp = shapely.geometry.asShape(feature['geometry'])
+        coords = shp.centroid
+
+        lat = coords.y
+        lon = coords.x
+
+    return lat, lon
+
 def hash_geom(f):
 
     geom = f['geometry']
-    geom = json.dumps(geom)
+
+    # see this? the part where we sort keys are remove any extra
+    # whitespace? yeah, that's important. because this:
+    # https://github.com/whosonfirst/go-whosonfirst-meta/issues/1#issuecomment-293699076
+
+    geom = json.dumps(geom, sort_keys=True, separators=(',', ':'))
     
     hash = hashlib.md5()
     hash.update(geom)
@@ -107,17 +134,36 @@ def load(root, id, **kwargs):
         func = stack[3]
 
         caller = "caller %s (%s at ln%s)" % (func, file, line)
-        logging.debug("%s is invoking 'mapzen.whosonfirst.utils.load' in not-a-list context"% caller)
+        # logging.debug("%s is invoking 'mapzen.whosonfirst.utils.load' in not-a-list context"% caller)
 
         path = mapzen.whosonfirst.uri.id2abspath(root, id, **kwargs)
 
-    if not path or not os.path.exists(path):
-        logging.error("unable to locate path for %s (%s)" % (id, root))
-        raise Exception, "unable to locate path for %s (%s)" % (id, root)
+    if path.startswith("http"):
 
-    return load_file(path)
+        return load_remote(path)
+
+    elif path.startswith("file://"):
+
+        path = path.replace("file://", "")
+        return load_file(path)
+
+    else:
+
+        return load_file(path)
+
+def load_remote(uri):
+
+    # TODO : add local caching
+
+    rsp = requests.get(uri)
+    return geojson.loads(rsp.content)
 
 def load_file(path):
+
+    if not path or not os.path.exists(path):
+        logging.error("unable to locate path %s" % path)
+        raise Exception, "unable to locate path %s" % path
+
     fh = open(path, 'r')
     return geojson.load(fh)
 
@@ -344,8 +390,22 @@ def update_concordances_metafile(meta, to_process, **kwargs):
     now = time.gmtime()
     ymd = time.strftime("%Y%m%d", now)
 
+    # sudo put me in a function (20170118/thisisaaronland)
+    
+    root = os.path.dirname(meta)
+
+    fname = os.path.basename(root)
+    fname = fname.split("-")
+
     fname_ymd = "wof-concordances-%s.csv" % ymd
     fname_latest = "wof-concordances-latest.csv"
+    
+    if len(fname) > 2:
+        
+        placetype = "-".join(fname[2:])
+        
+        fname_ymd = "wof-%s-concordances-%s.csv" % (placetype, ymd)
+        fname_latest = "wof-%s-concordances-latest.csv" % placetype
 
     path_ymd = os.path.join(meta, fname_ymd)
     path_latest = os.path.join(meta, fname_latest)
@@ -394,9 +454,6 @@ def update_concordances_metafile(meta, to_process, **kwargs):
         hash_latest = hash_file(path_latest)
 
         if hash_ymd == hash_latest:
-
-            logging.info("%s is the same as %s, so pruning" % (path_ymd, path_latest))
-            os.unlink(path_latest)
 
             created = []
             modified = []
@@ -486,6 +543,8 @@ def __update_concordances(source, dest, to_process, **kwargs):
 # so that it can be invoked from both a CLI tool and from a git pre-commit hook
 # (20151111/thisisaaronland)
 
+# PLEASE MOVE ME OUT OF py-mz-wof-utils (20161221/thisisaaronland)
+
 def update_placetype_metafiles(meta, updated, **kwargs):
 
     modified = []
@@ -532,6 +591,16 @@ def update_placetype_metafiles(meta, updated, **kwargs):
             logging.info("rebuild meta file for placetype %s with one update" % placetype)
         else:
             logging.info("rebuild meta file for placetype %s with %s updates" % (placetype, count))
+
+        # sudo put me in a function (20170118/thisisaaronland)
+
+        root = os.path.dirname(meta)
+
+        fname = os.path.basename(root)
+        fname = fname.split("-")
+
+        if len(fname) > 2:
+            placetype = "-".join(fname[2:])
 
         fname_ymd = "wof-%s-%s.csv" % (placetype, ymd)
         fname_latest = "wof-%s-latest.csv" % placetype

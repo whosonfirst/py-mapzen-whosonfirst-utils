@@ -104,7 +104,7 @@ if __name__ == '__main__':
             elif options.keys_template == 'external_editor':
                 slim_keys = ['name','id','placetype','parent_id','is_landuse_aoi','supersedes','superseded_by','deprecated','cessation','eng_preferred_name','eng_variant_name', 'max_zoom','min_zoom','lbl_latitude','lbl_longitude','is_funky','is_hard_boundary','is_official','tier_locality','note','country_id','region_id','locality_id','wof_country']
             elif options.keys_template == 'external_editor_shapefile':
-                slim_keys = ['name','id','placetype','parent','is_aoi','super','super_by','deprecated','cessation','eng_pref','eng_var', 'max_zoom','min_zoom','lbl_lat','lbl_long','is_funky','is_hard','is_offic','tier_local','note','country','region','locality','wof_a3']
+                slim_keys = ['name','id','placetype','parent','current','is_aoi','super','super_by','deprecated','cessation','eng_pref','eng_var', 'max_zoom','min_zoom','controlled','geom_id','rev_lat','rev_long','lbl_lat','lbl_long','is_funky','is_hard','is_offic','tier_local','country','place_alt','region','locality','wof_a3','iso_a3','note','src_geom']
             elif options.keys_template == 'more':
                 slim_keys = ['name','id','placetype','parent_id','country_id','region_id','locality_id','wof_country','iso_country','lbl_latitude','lbl_longitude','inception','cessation','deprecated','supersedes','superseded_by','lastmodified','source']
         else:

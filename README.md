@@ -2,6 +2,12 @@
 
 Shared utilities for working with Who's On First documents
 
+## Install
+
+```
+sudo pip install -r requirements.txt .
+```
+
 ## IMPORTANT
 
 This library is provided as-is, right now. It lacks proper

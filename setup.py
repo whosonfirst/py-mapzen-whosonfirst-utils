@@ -19,28 +19,11 @@ desc = open("README.md").read()
 
 setup(
     name='mapzen.whosonfirst.utils',
-    namespace_packages=['mapzen', 'mapzen.whosonfirst', 'mapzen.whosonfirst.utils'],
+    namespace_packages=['mapzen', 'mapzen.whosonfirst'],
     version=version,
     description='Simple Python wrapper for Who\'s On First helper functions',
     author='Mapzen',
     url='https://github.com/whosonfirst/py-mapzen-whosonfirst-utils',
-    install_requires=[
-        'mapzen.whosonfirst.placetypes>=0.11',
-        'mapzen.whosonfirst.placetypes.utils>=0.01',
-        'mapzen.whosonfirst.meta>=0.12',
-        'mapzen.whosonfirst.uri>=0.1',
-        'requests',
-        'shapely',
-        'geojson',
-        'boto',
-        'atomicwrites',
-        ],
-    dependency_links=[
-        'https://github.com/whosonfirst/py-mapzen-whosonfirst-placetypes/tarball/master#egg=mapzen.whosonfirst.placetypes-0.11',
-        'https://github.com/whosonfirst/py-mapzen-whosonfirst-placetypes-utils/tarball/master#egg=mapzen.whosonfirst.placetypes.utils-0.01',
-        'https://github.com/whosonfirst/py-mapzen-whosonfirst-meta/tarball/master#egg=mapzen.whosonfirst.meta-0.12',
-        'https://github.com/whosonfirst/py-mapzen-whosonfirst-uri/tarball/master#egg=mapzen.whosonfirst.uri-0.1',
-        ],
     packages=packages,
     scripts=[
         'scripts/wof-check-etags',
