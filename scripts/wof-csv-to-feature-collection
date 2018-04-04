@@ -153,8 +153,11 @@ if __name__ == '__main__':
                 wof_id = row.get('wof:id', None)
 
                 if wof_id == None:
-                    logging.error("missing wof:id column... how can --infer-path work... no, I mean really?")
-                    sys.exit(1)
+                    wof_id = row.get('id', None)
+                    
+                    if wof_id == None:
+                        logging.error("missing wof:id column... how can --infer-path work... no, I mean really?")
+                        sys.exit(1)
 
                 path = mapzen.whosonfirst.uri.id2relpath( wof_id )
 
