@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+
+# wof-supersede-records -s /usr/local/data/whosonfirst-data/data/ -w GOOD_WOFID BAD_WOFID BAD_WOFID...;
+
+import sys
+import os.path
+import logging
+import datetime
+import pprint
+
+import mapzen.whosonfirst
+import mapzen.whosonfirst.utils
+import mapzen.whosonfirst.export
+
+if __name__ == '__main__':
+
+    import optparse
+    opt_parser = optparse.OptionParser()
+
+    opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
+    opt_parser.add_option('-w', '--wofid', dest='wofid', action='store', default=None, help='The WOF ID that will supersede all the others')
+    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+    opt_parser.add_option('-n', '--dry-run', dest='dryrun', action='store_true', default=False, help='...')
+
+    options, args = opt_parser.parse_args()
+
+    if options.verbose:	
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    if not options.wofid:
+        logging.error("Missing WOF ID")
+        sys.exit()
+
+    wofid = options.wofid
+
+    source = os.path.abspath(options.source)
+
+    exporter = mapzen.whosonfirst.export.flatfile(source)
+
+    feature = mapzen.whosonfirst.utils.load([source], wofid)
+    props = feature["properties"]
+
+    supersedes = props["wof:supersedes"] 
+
+    dt = datetime.datetime.now()
+    ymd = dt.strftime("%Y-%m-%d")
+
+    for other_id in args:
+
+        other_feature = mapzen.whosonfirst.utils.load([source], other_id)
+
+        other_props = other_feature["properties"]
+        other_props["mz:is_current"] = 0
+        other_props["edtf:deprecated"] = ymd
+        
+        superseded_by = other_props.get("wof:superseded_by", [])
+
+        if not wofid in superseded_by:
+            superseded_by.append(wofid)
+
+        other_props["wof:superseded_by"] = superseded_by
+
+        other_feature["properties"] = other_props
+
+        if options.dryrun:
+            logging.info("running in dry run mode, would export:")
+            logging.info(pprint.pformat(other_feature["properties"]))
+        else:
+            exporter.export_feature(other_feature)
+
+        if not other_id in supersedes:
+            supersedes.append(other_id)
+
+    props["wof:supersedes"] = supersedes
+    feature["properties"] = props
+
+    if options.dryrun:
+        logging.info("running in dry run mode, would export:")
+        logging.info(pprint.pformat(feature["properties"]))
+    else:
+        exporter.export_feature(feature)
+
+    sys.exit()

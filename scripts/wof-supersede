@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# I honestly don't remember - this is being left here in case anyone is still
+# using it but I have started using wof-supersede-records instead
+# (20180525/thisisaaronland)
+
 import sys
 import os.path
 import logging

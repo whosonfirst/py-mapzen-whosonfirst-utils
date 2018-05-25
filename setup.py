@@ -42,6 +42,7 @@ setup(
         'scripts/wof-csv-to-s3',
         'scripts/wof-mk-place',
         'scripts/wof-supersede',
+        'scripts/wof-supersede-records',
         ],
     download_url='https://github.com/whosonfirst/py-mapzen-whosonfirst-utils/releases/tag/' + version,
     license='BSD')
