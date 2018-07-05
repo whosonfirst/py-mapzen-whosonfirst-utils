@@ -200,7 +200,7 @@ def id2path(id):
 
 def generate_id():
 
-    url = 'http://api.brooklynintegers.com/rest/'
+    url = 'https://api.brooklynintegers.com/rest/'
     params = {'method':'brooklyn.integers.create'}
 
     try :
