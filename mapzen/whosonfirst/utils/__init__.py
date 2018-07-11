@@ -140,7 +140,7 @@ def load(root, id, **kwargs):
 
     if path.startswith("http"):
 
-        return load_remote(path)
+        return load_remote(path, **kwargs)
 
     elif path.startswith("file://"):
 
@@ -151,11 +151,15 @@ def load(root, id, **kwargs):
 
         return load_file(path)
 
-def load_remote(uri):
+def load_remote(uri, **kwargs):
 
     # TODO : add local caching
 
-    rsp = requests.get(uri)
+    if kwargs.get("insecure", False):
+        rsp = requests.get(uri, verify=False)
+    else:
+        rsp = requests.get(uri)
+
     return geojson.loads(rsp.content)
 
 def load_file(path):

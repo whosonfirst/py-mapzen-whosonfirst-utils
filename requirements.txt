@@ -1,6 +1,6 @@
-git+git://github.com/whosonfirst/py-mapzen-whosonfirst-placetypes
-git+git://github.com/whosonfirst/py-mapzen-whosonfirst-meta
-git+git://github.com/whosonfirst/py-mapzen-whosonfirst-uri
+git+https://github.com/whosonfirst/py-mapzen-whosonfirst-placetypes
+git+https://github.com/whosonfirst/py-mapzen-whosonfirst-meta
+git+https://github.com/whosonfirst/py-mapzen-whosonfirst-uri
 requests
 shapely
 geojson
