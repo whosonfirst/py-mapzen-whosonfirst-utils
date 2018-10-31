@@ -26,6 +26,7 @@ setup(
     url='https://github.com/whosonfirst/py-mapzen-whosonfirst-utils',
     packages=packages,
     scripts=[
+        'scripts/wof-assign-wikipedia-concordances',
         'scripts/wof-check-etags',
         'scripts/wof-dump-concordances-local',
         'scripts/wof-dump-hierarchies',
