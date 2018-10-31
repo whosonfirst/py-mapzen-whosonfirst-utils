@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import logging
+
+import requests
+import json
+
+import mapzen.whosonfirst.utils
+import mapzen.whosonfirst.export
+
+# as in: https://en.wikipedia.org/w/api.php?action=query&prop=pageprops&ppprop=wikibase_item&redirects=1&titles={PAGE}&format=json
+# see also: bgetentities&sites=enwiki&titles={PAGE}&normalize=1
+
+def wikipedia_props(page):
+
+    url = "https://en.wikipedia.org/w/api.php"
+
+    params = {
+        "action": "query",
+        "prop": "pageprops",
+        "ppprop": "wikibase_item",
+        "redirects": 1,
+        "titles": page,
+        "format": "json"
+    }
+    
+    rsp = requests.get(url, params=params)
+    data = json.loads(rsp.content)
+
+    pages = data["query"]["pages"]
+
+    keys = pages.keys()
+    first = keys[0]
+
+    return pages[first]
+
+if __name__ == "__main__":
+
+    import optparse
+    opt_parser = optparse.OptionParser()
+
+    opt_parser.add_option('-p', '--wikipedia-page', dest='wikipedia_page', action='store', default=None, help="...")    
+    opt_parser.add_option('-d', '--whosonfirst-data', dest='whosonfirst_data', action='store', default="/usr/local/data/whosonfirst-data", help="...")    
+    opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
+
+    options, args = opt_parser.parse_args()
+
+    if options.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+    
+    wof_root = os.path.abspath(options.whosonfirst_data)
+    wof_data = os.path.join(wof_root, "data")
+
+    exporter = mapzen.whosonfirst.export.flatfile(wof_data)
+
+    # {u'pageprops': {u'wikibase_item': u'Q1031924'}, u'ns': 0, u'pageid': 1293554, u'title': u'Canada 3000'}
+
+    wk_props = None
+
+    try:
+        wk_props = wikipedia_props(options.wikipedia_page)
+    except Exception, e:
+        logging.error("Unable to determine Wikipedia properties, %s" % e)
+        sys.exit(1)
+
+    """
+    import pprint
+    print pprint.pformat(props)
+    sys.exit(0)
+    """
+
+    for wof_id in args:
+
+        feature = mapzen.whosonfirst.utils.load(wof_data, wof_id)
+        props = feature["properties"]
+
+        conc = props.get("wof:concordances", {})
+
+        conc["wk:page"] = wk_props["title"]
+        conc["wk:pageid"] = wk_props["pageid"]
+        conc["wd:id"] = wk_props["pageprops"]["wikibase_item"]
+
+        props["wof:concordances"] = conc
+        feature["properties"] = props
+
+        exporter.export_feature(feature)
