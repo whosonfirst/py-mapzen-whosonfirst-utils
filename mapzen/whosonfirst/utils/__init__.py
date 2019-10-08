@@ -299,6 +299,19 @@ def crawl(source, **kwargs):
 
             yield ret
 
+def show_path(source, **kwargs):
+
+    inflate = kwargs.get('inflate', False)
+
+    for (root, dirs, files) in os.walk(source):
+
+        for f in files:
+
+            path = os.path.join(root, f)
+            path = os.path.abspath(path)
+
+            yield path
+
 # this wraps ensure_valid_wof and returns True or False
 
 def is_valid_wof(path, **kwargs):
