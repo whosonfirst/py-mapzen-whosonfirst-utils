@@ -67,7 +67,7 @@ def hash_geom(f):
     geom = json.dumps(geom, sort_keys=True, separators=(',', ':'))
 
     hash = hashlib.md5()
-    hash.update(geom)
+    hash.update(geom.encode('utf8'))
     return hash.hexdigest()
 
 def hash_file(path):
