@@ -5,7 +5,6 @@ import sys
 import logging
 
 import requests
-import json
 
 import mapzen.whosonfirst.utils
 import mapzen.whosonfirst.export
@@ -25,9 +24,9 @@ def wikipedia_props(page):
         "titles": page,
         "format": "json"
     }
-    
+
     rsp = requests.get(url, params=params)
-    data = json.loads(rsp.content)
+    data = rsp.json()
 
     pages = data["query"]["pages"]
 
@@ -41,8 +40,8 @@ if __name__ == "__main__":
     import optparse
     opt_parser = optparse.OptionParser()
 
-    opt_parser.add_option('-p', '--wikipedia-page', dest='wikipedia_page', action='store', default=None, help="...")    
-    opt_parser.add_option('-d', '--whosonfirst-data', dest='whosonfirst_data', action='store', default="/usr/local/data/whosonfirst-data", help="...")    
+    opt_parser.add_option('-p', '--wikipedia-page', dest='wikipedia_page', action='store', default=None, help="...")
+    opt_parser.add_option('-d', '--whosonfirst-data', dest='whosonfirst_data', action='store', default="/usr/local/data/whosonfirst-data", help="...")
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
 
     options, args = opt_parser.parse_args()
@@ -51,13 +50,13 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-    
+
     wof_root = os.path.abspath(options.whosonfirst_data)
     wof_data = os.path.join(wof_root, "data")
 
     exporter = mapzen.whosonfirst.export.flatfile(wof_data)
 
-    # {u'pageprops': {u'wikibase_item': u'Q1031924'}, u'ns': 0, u'pageid': 1293554, u'title': u'Canada 3000'}
+    # {'pageprops': {'wikibase_item': 'Q1031924'}, 'ns': 0, 'pageid': 1293554, 'title': 'Canada 3000'}
 
     wk_props = None
 

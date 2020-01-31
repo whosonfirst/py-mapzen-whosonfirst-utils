@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     # (21050819/thisisaaronland)
 
     if options.debug:
-        print pprint.pformat(feature)
+        print(pprint.pformat(feature))
         sys.exit()
 
     exporter.export_feature(feature)

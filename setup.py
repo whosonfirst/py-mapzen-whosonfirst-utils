@@ -19,6 +19,7 @@ desc = open("README.md").read()
 
 setup(
     name='mapzen.whosonfirst.utils',
+    python_requires='>3',
     namespace_packages=['mapzen', 'mapzen.whosonfirst'],
     version=version,
     description='Simple Python wrapper for Who\'s On First helper functions',

@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -30,7 +30,7 @@ if __name__ == '__main__':
         reader = csv.DictReader(fh)
 
         for row in reader:
-            
+
             if row['wof_country'].upper() != options.country.upper():
                 continue
 

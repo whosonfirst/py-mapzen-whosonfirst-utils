@@ -33,7 +33,7 @@ PID=$$
 FNAME=`basename ${DB}`
 FNAME="${FNAME}-${PID}.sql"
 SQL="/tmp/${FNAME}"
-   
+
 if [ -f ${DB} ]
 then
     mv ${DB} ${DB}.bak
@@ -52,7 +52,7 @@ echo "CREATE INDEX by_woe_id ON concordances(woe_id);" >> ${SQL}
 echo "CREATE INDEX by_gn_id ON concordances(geonames_id);" >> ${SQL}
 echo "CREATE INDEX by_iso ON concordances(iso);" >> ${SQL}
 echo "CREATE INDEX by_placetype ON concordances(placetype);" >> ${SQL}
-echo ".mode csv" >> ${SQL} 
+echo ".mode csv" >> ${SQL}
 echo ".import ${CSV} concordances" >> ${SQL}
 
 sqlite3 ${DB} < ${SQL}

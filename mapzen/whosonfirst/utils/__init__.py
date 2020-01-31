@@ -8,13 +8,12 @@ import logging
 import re
 import time
 import shutil
-import types
 
 import datetime
 import copy
 
 import inspect
-import sys 
+import sys
 import signal
 import multiprocessing
 import hashlib
@@ -66,22 +65,22 @@ def hash_geom(f):
     # https://github.com/whosonfirst/go-whosonfirst-meta/issues/1#issuecomment-293699076
 
     geom = json.dumps(geom, sort_keys=True, separators=(',', ':'))
-    
+
     hash = hashlib.md5()
-    hash.update(geom)
+    hash.update(geom.encode('utf8'))
     return hash.hexdigest()
 
 def hash_file(path):
 
     try:
         fh = open(path, "r")
-    except Exception, e:
+    except Exception as e:
         logging.error("failed to open %s for hashing, because %s" % (path, e))
         return None
 
     hash = hashlib.md5()
     hash.update(fh.read())
-    
+
     return hash.hexdigest()
 
 def is_valid_latitude(lat):
@@ -111,7 +110,7 @@ def is_valid_longitude(lon):
 
 def load(root, id, **kwargs):
 
-    if type(root) in (types.ListType, types.TupleType) :
+    if type(root) in (list, tuple) :
 
         path = None
 
@@ -166,7 +165,7 @@ def load_file(path):
 
     if not path or not os.path.exists(path):
         logging.error("unable to locate path %s" % path)
-        raise Exception, "unable to locate path %s" % path
+        raise Exception("unable to locate path %s" % path)
 
     fh = open(path, 'r')
     return geojson.load(fh)
@@ -208,18 +207,18 @@ def generate_id():
     params = {'method':'brooklyn.integers.create'}
 
     try :
-        rsp = requests.post(url, params=params)    
+        rsp = requests.post(url, params=params)
         data = rsp.content
-    except Exception, e:
+    except Exception as e:
         logging.error(e)
         return 0
-    
+
     try:
         data = json.loads(data)
-    except Exception, e:
+    except Exception as e:
         logging.error(e)
         return 0
-    
+
     return data.get('integer', 0)
 
 def ensure_bbox(f):
@@ -277,10 +276,10 @@ def _callback_wrapper(args):
         callback(feature)
     except KeyboardInterrupt:
         logging.warning("Received interupt handler (in callback wrapper scope) so exiting")
-    except Exception, e:
+    except Exception as e:
         logging.error("Failed to process feature because %s" % e)
-        raise Exception, e
-    
+        raise Exception(e)
+
 def crawl(source, **kwargs):
 
     inflate = kwargs.get('inflate', False)
@@ -355,7 +354,7 @@ def ensure_valid_wof(path, **kwargs):
             fh = open(path, 'r')
             data = geojson.load(fh)
 
-        except Exception, e:
+        except Exception as e:
             logging.error("failed to load %s, because %s" % (path, e))
             return None
 
@@ -395,7 +394,7 @@ def update_concordances_metafile(meta, to_process, **kwargs):
     ymd = time.strftime("%Y%m%d", now)
 
     # sudo put me in a function (20170118/thisisaaronland)
-    
+
     root = os.path.dirname(meta)
 
     fname = os.path.basename(root)
@@ -403,11 +402,11 @@ def update_concordances_metafile(meta, to_process, **kwargs):
 
     fname_ymd = "wof-concordances-%s.csv" % ymd
     fname_latest = "wof-concordances-latest.csv"
-    
+
     if len(fname) > 2:
-        
+
         placetype = "-".join(fname[2:])
-        
+
         fname_ymd = "wof-%s-concordances-%s.csv" % (placetype, ymd)
         fname_latest = "wof-%s-concordances-latest.csv" % placetype
 
@@ -471,7 +470,7 @@ def update_concordances_metafile(meta, to_process, **kwargs):
 # stub while I decideif this should live in py-mz-wof-concordances
 
 def __update_concordances(source, dest, to_process, **kwargs):
-    
+
     to_update = {}
 
     source_fh = open(source, 'r')
@@ -479,7 +478,7 @@ def __update_concordances(source, dest, to_process, **kwargs):
 
     # First figure out the columns we've got
 
-    cols = reader.next()
+    cols = next(reader)
 
     # Next check to see if there are any new ones
 
@@ -556,7 +555,7 @@ def update_placetype_metafiles(meta, updated, **kwargs):
 
     now = time.gmtime()
     ymd = time.strftime("%Y%m%d", now)
-    
+
     to_rebuild = {}
 
     # first plow through the available updates and sort them
@@ -576,7 +575,7 @@ def update_placetype_metafiles(meta, updated, **kwargs):
             e = "%s is missing a placetype!" % path
 
             logging.error(e)
-            raise Exception, e
+            raise Exception(e)
 
         to_process = to_rebuild.get(placetype, [])
         to_process.append(path)
@@ -652,7 +651,7 @@ def parse_filename(path):
 
     if not m:
         return None
-              
+
     id, suffix = m.groups()
 
     return (id, suffix)
@@ -660,7 +659,7 @@ def parse_filename(path):
 def supersede_feature(old_feature, **kwargs):
 
     new_feature = copy.deepcopy(old_feature)
-    
+
     old_props = old_feature['properties']
     new_props = new_feature['properties']
 
@@ -677,7 +676,7 @@ def supersede_feature(old_feature, **kwargs):
 
     now = datetime.datetime.now()
     ymd = now.strftime("%Y-%m-%d")
-    
+
     old_props['edtf:superseded'] = ymd
 
     old_feature['properties'] = old_props

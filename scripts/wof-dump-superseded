@@ -13,19 +13,19 @@ if __name__ == '__main__':
 
     import optparse
     opt_parser = optparse.OptionParser()
-    
+
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Directory to read files from')
     opt_parser.add_option('-c', '--csv', dest='csv', action='store', default=None, help='Directory to write concordances to (default is STDOUT)')
     opt_parser.add_option('-l', '--latest', dest='latest', action='store_true', default=False, help='Copy <PLACETYPE>-<YMD>.csv to <PLACETYPE>-latest.csv (default is False)')
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
-    
+
     options, args = opt_parser.parse_args()
-    
-    if options.verbose:	
+
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-                
+
     out_fh = sys.stdout
     out_path = None
 
@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
         props = record['properties']
         id = props['wof:id']
-       
+
         supersedes = props.get('wof:supersedes', [])
         superseded_by = props.get('wof:superseded_by', [])
 

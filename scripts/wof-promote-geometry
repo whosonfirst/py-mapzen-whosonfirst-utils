@@ -15,11 +15,11 @@ if __name__ == '__main__':
 
     opt_parser.add_option('-s', '--source', dest='source', action='store', default=None, help='Where to read files from')
     opt_parser.add_option('-g', '--geom', dest='geom', action='store', default=None, help='The geometry to promote')
-    opt_parser.add_option('-i', '--id', dest='id', action='store', default=None, help='The WOF ID of the record to update')	
+    opt_parser.add_option('-i', '--id', dest='id', action='store', default=None, help='The WOF ID of the record to update')
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # See this - it is the current way of doing things but not the
     # ideal way of doing things. It should be possible to pass a
     # GeoJSON file as part of 'args' and have the code look for the
-    # new consensus polygon in there and I guess importing any 
+    # new consensus polygon in there and I guess importing any
     # additional polygons as alternates along the way...maybe?
     # (20150720/thisisaaronland)
 
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     if not os.path.exists(alt_path):
         logging.error("alt record for %s (%s) does not exist" % (id, alt_path))
         sys.exit()
-    
+
     wof_feature = mapzen.whosonfirst.utils.load(source, id)
     alt_feature_collection = mapzen.whosonfirst.utils.load(source, id, alt=True)
 
@@ -165,11 +165,11 @@ if __name__ == '__main__':
         new_feature['bbox'] = wof_bbox
 
     """
-    print pprint.pformat(wof_feature.keys())
-    print pprint.pformat(wof_props)
+    print(pprint.pformat(wof_feature.keys()))
+    print(pprint.pformat(wof_props))
 
-    print pprint.pformat(new_feature.keys())
-    print pprint.pformat(new_props)
+    print(pprint.pformat(new_feature.keys()))
+    print(pprint.pformat(new_props))
     """
 
     # rebuild the alt collection
@@ -181,7 +181,7 @@ if __name__ == '__main__':
 
     for f in alt_feature_collection['features']:
 
-        if f['properties'].get('src:geom', None) == options.geom:        
+        if f['properties'].get('src:geom', None) == options.geom:
             new_collection.append(new_feature)
         else:
             new_collection.append(f)

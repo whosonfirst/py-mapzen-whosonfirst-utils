@@ -4,7 +4,6 @@ import sys
 import logging
 import os.path
 import csv
-import pprint
 import geojson
 import time
 
@@ -15,15 +14,15 @@ def put_file(bucket, file, name):
 
     try:
         k = boto.s3.key.Key(bucket)
-        k.key = name   
+        k.key = name
         k.set_contents_from_filename(file)
-        
+
         try:
             k.set_acl('public-read')
         except Exception, e:
             logging.warning("Failed to set ACL because %s" % e)
             time.sleep(1)
-                    
+
             k.set_acl('public-read')
 
     except Exception, e:
@@ -51,7 +50,7 @@ if __name__ == '__main__':
 
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -108,7 +107,7 @@ if __name__ == '__main__':
         lastmod = props.get('wof:lastmodified', None)
 
         logging.info("[%s] creating %s (from %s)" % (counter, path, abspath))
-        
+
         if options.dryrun:
             logging.info("dry-run mode enabled, just kidding")
             continue

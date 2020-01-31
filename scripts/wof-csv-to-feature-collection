@@ -4,7 +4,6 @@ import sys
 import logging
 import os.path
 import csv
-import pprint
 import geojson
 import json
 
@@ -12,7 +11,7 @@ import mapzen.whosonfirst.uri
 import mapzen.whosonfirst.utils
 
 import requests
-import StringIO
+import io
 import boto.s3.connection
 import boto.s3.key
 
@@ -185,7 +184,7 @@ if __name__ == '__main__':
                 logging.error("%s returned an unexpected status code: %s" (path, code))
                 continue
 
-            fdata = StringIO.StringIO()
+            fdata = io.StringIO()
             fdata.write(rsp.content)
             fdata.seek(0)
 
@@ -250,7 +249,7 @@ if __name__ == '__main__':
                 # add a new line between records for easier debug but larger file size
                 out.write(",\r")
 
-            #print data # props is an object
+            #print(data) # props is an object
             fresh_props = {}
             for key in slim_keys:
                 try:
@@ -271,11 +270,11 @@ if __name__ == '__main__':
                 except:
                     logging.debug("\tmissing key: %s for %s" % (key, property_aliases[key]))
                     fresh_props.update( { key: '' } )
-            #print fresh_props
+            #print(fresh_props)
             # this won't be an ordered list, sadly
             if options.keys_template != "full":
                     data['properties'] = fresh_props
-            #print data
+            #print(data)
             geojson.dump(data, out)
         else:
             if first == True:

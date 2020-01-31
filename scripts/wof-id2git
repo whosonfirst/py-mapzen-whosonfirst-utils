@@ -19,6 +19,6 @@ if __name__ == '__main__':
         path = mapzen.whosonfirst.utils.id2relpath(id)
         url = "%sblob/%s/data/%s" % (options.repo, options.branch, path)
 
-        print url
+        print(url)
 
     sys.exit()
