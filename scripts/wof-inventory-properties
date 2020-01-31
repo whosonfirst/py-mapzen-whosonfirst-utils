@@ -22,7 +22,7 @@ def process(args):
 
     fh = open(path, 'r')
     data = geojson.load(fh)
-    
+
     props = data['properties']
 
     for k in props.keys():
@@ -31,7 +31,7 @@ def process(args):
             INVENTORY[k] += 1
         else:
             INVENTORY[k] = 1
-    
+
 if __name__ == '__main__':
 
     import optparse
@@ -92,8 +92,7 @@ if __name__ == '__main__':
         out = (k, INVENTORY[k])
         writer.writerow(out)
 
-    # print pprint.pformat(INVENTORY)
+    # print(pprint.pformat(INVENTORY))
 
     logging.info("all done")
     sys.exit()
-    

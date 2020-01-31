@@ -7,8 +7,6 @@
 import sys
 import os.path
 import logging
-import datetime
-import copy
 import pprint
 
 import mapzen.whosonfirst
@@ -29,7 +27,7 @@ if __name__ == '__main__':
     opt_parser.add_option('-n', '--dry-run', dest='dryrun', action='store_true', default=False, help='...')
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)

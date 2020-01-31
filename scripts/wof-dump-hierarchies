@@ -4,7 +4,6 @@ import sys
 import logging
 import os.path
 import csv
-import pprint
 import geojson
 
 import mapzen.whosonfirst.utils
@@ -21,7 +20,7 @@ if __name__ == '__main__':
 
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -66,14 +65,14 @@ if __name__ == '__main__':
         hierarchies = props.get('wof:hierarchy', [])
 
         for hier in hierarchies:
-            
+
             out = {
                 'id': props.get('wof:id', -1),
                 # 'parent_id': props.get('wof:parent_id', -1),
                 'placetype': props.get('wof:placetype', ''),
                 'iso': props.get('iso:country', ''),
                 }
-            
+
             for pl in placetypes:
                 k = "%s_id" % pl
                 out[k] = hier.get(k, 0)
@@ -81,7 +80,7 @@ if __name__ == '__main__':
             if not writer:
                 writer = csv.DictWriter(fh, fieldnames=out.keys())
                 writer.writeheader()
-            
+
             writer.writerow(out)
 
     sys.exit()

@@ -4,11 +4,8 @@ import sys
 import logging
 import os.path
 import csv
-import pprint
-import geojson
 import time
 import shutil
-import hashlib
 
 import mapzen.whosonfirst.utils
 import mapzen.whosonfirst.meta
@@ -36,7 +33,7 @@ if __name__ == '__main__':
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -150,7 +147,7 @@ if __name__ == '__main__':
         # because this (it's long because it's complex because place)
         # https://github.com/whosonfirst-data/whosonfirst-data/issues/538
 
-        placetype = props["wof:placetype"]        
+        placetype = props["wof:placetype"]
         possible = [ placetype ]
 
         alt = props.get("wof:placetype_alt", [])
@@ -183,7 +180,7 @@ if __name__ == '__main__':
     if options.latest:
 
         for name, path in paths.items():
-            
+
             root = os.path.abspath(dest)
             fname = "wof-%s-latest.csv" % name
             latest_path = os.path.join(root, fname)

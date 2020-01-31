@@ -21,7 +21,7 @@ if __name__ == '__main__':
         )
 
         for root in endpoints:
-            
+
             url = root + relpath
 
             rsp = requests.head(url)

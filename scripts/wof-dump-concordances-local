@@ -4,7 +4,6 @@ import sys
 import logging
 import os.path
 import csv
-import pprint
 import geojson
 
 import mapzen.whosonfirst.utils
@@ -21,7 +20,7 @@ if __name__ == '__main__':
     opt_parser.add_option('-v', '--verbose', dest='verbose', action='store_true', default=False, help='Be chatty (default is false)')
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -72,4 +71,3 @@ if __name__ == '__main__':
             writer.writeheader()
 
         writer.writerow(out)
-            

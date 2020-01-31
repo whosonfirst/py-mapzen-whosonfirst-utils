@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     options, args = opt_parser.parse_args()
 
-    if options.verbose:	
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     feature = mapzen.whosonfirst.utils.load([source], wofid)
     props = feature["properties"]
 
-    supersedes = props["wof:supersedes"] 
+    supersedes = props["wof:supersedes"]
 
     dt = datetime.datetime.now()
     ymd = dt.strftime("%Y-%m-%d")
@@ -54,7 +54,7 @@ if __name__ == '__main__':
         other_props = other_feature["properties"]
         other_props["mz:is_current"] = 0
         other_props["edtf:deprecated"] = ymd
-        
+
         superseded_by = other_props.get("wof:superseded_by", [])
 
         if not wofid in superseded_by:
