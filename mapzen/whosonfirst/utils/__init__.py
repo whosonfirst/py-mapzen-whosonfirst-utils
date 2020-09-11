@@ -51,8 +51,8 @@ def reverse_geocoordinates(feature):
         shp = shapely.geometry.asShape(feature['geometry'])
         coords = shp.centroid
 
-        lat = coords.y
-        lon = coords.x
+        lat = coords.y  # pylint: disable=no-member
+        lon = coords.x  # pylint: disable=no-member
 
     return lat, lon
 
@@ -127,12 +127,12 @@ def load(root, id, **kwargs):
 
     else:
 
-        stack = inspect.stack()[1]
-        file = stack[1]
-        line = stack[2]
-        func = stack[3]
+        # stack = inspect.stack()[1]
+        # file = stack[1]
+        # line = stack[2]
+        # func = stack[3]
 
-        caller = "caller %s (%s at ln%s)" % (func, file, line)
+        # caller = "caller %s (%s at ln%s)" % (func, file, line)
         # logging.debug("%s is invoking 'mapzen.whosonfirst.utils.load' in not-a-list context"% caller)
 
         path = mapzen.whosonfirst.uri.id2abspath(root, id, **kwargs)
@@ -282,9 +282,9 @@ def _callback_wrapper(args):
 
 def crawl(source, **kwargs):
 
-    inflate = kwargs.get('inflate', False)
+    _ = kwargs.get('inflate', False)
 
-    for (root, dirs, files) in os.walk(source):
+    for (root, _, files) in os.walk(source):
 
         for f in files:
 
@@ -319,7 +319,7 @@ def ensure_valid_wof(path, **kwargs):
     ensure = kwargs.get('ensure_placetype', [])
     skip = kwargs.get('skip_placetype', [])
 
-    is_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
+    # is_wof = re.compile(r"^(\d+)(?:-([a-z0-9\-]+))?$")
 
     path = os.path.abspath(path)
     parsed = parse_filename(path)
@@ -327,7 +327,7 @@ def ensure_valid_wof(path, **kwargs):
     if not parsed:
         return None
 
-    id, suffix = parsed
+    _, suffix = parsed
 
     # Hey look we're dealing with an alt file of some kind!
 
